@@ -5,7 +5,7 @@ namespace certman.Routes;
 
 public static class DbUtils
 {
-    public static readonly Delegate Post =
+    public static readonly Delegate CreateDb =
         async ([FromServices] IConfiguration config) =>
         {
             //get connection string

@@ -2,7 +2,7 @@
 
 public static class ServerVersion
 {
-    public static readonly Delegate Get =
+    public static readonly Delegate GetServerVersion =
         () => new
         {
             ServerVersion = "1.0"

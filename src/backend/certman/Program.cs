@@ -32,13 +32,21 @@ app.UseSwaggerEx();
 app.UseCors(c => c.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
 
 app.MapGet("/", () => "Hello World!");
-app.MapGet("/server-version", ServerVersion.Get);
-app.MapPost("/create-db", DbUtils.Post);
+app.MapGet("/server-version", ServerVersion.GetServerVersion);
+app.MapPost("/create-db", DbUtils.CreateDb);
 
 // POST endpoint "/ca-certs" to create a new CA cert; returns the certificate's id
 app.MapPost("/ca-certs", Certs.CreateCACert);
 
 // GET endpoint to return all CA Certs. Returns an array of CACert objects
 app.MapGet("/ca-certs", Certs.GetAllCACerts);
+
+app.MapGet("ca-certs/{id}/key", Certs.DownloadKeyFile);
+
+app.MapGet("ca-certs/{id}/pem", Certs.DownloadPemFile);
+
+app.MapPost("/trusted-certs", Certs.CreateTrustedCert);
+
+
 
 app.Run();
