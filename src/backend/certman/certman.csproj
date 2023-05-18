@@ -4,8 +4,10 @@
     <TargetFramework>net6.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);1591</NoWarn>
   </PropertyGroup>
-
+  
   <!-- swagger -->
     <ItemGroup>
         <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
@@ -14,6 +16,7 @@
   <!-- dapper sqlite -->
     <ItemGroup>
       <PackageReference Include="Dapper" Version="2.0.123" />
+      <PackageReference Include="Swashbuckle.AspNetCore.Annotations" Version="6.5.0" />
       <PackageReference Include="System.Data.SQLite" Version="1.0.117" />
       <PackageReference Include="Microsoft.Data.Sqlite" Version="6.0.16" />
       <PackageReference Include="Microsoft.Extensions.Logging" Version="6.0.0" />

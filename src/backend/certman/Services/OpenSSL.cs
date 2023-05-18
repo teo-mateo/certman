@@ -6,8 +6,7 @@ public interface IOpenSSL
 {
     public string CreatePrivateKey(string name);
     public string CreatePEMFile(string keyfile);
-
-    public Task CreateKeyAndCsr(string name, CsrInfo csrInfo);
+    public Task<(string keyfile, string csrfile)> CreateKeyAndCsr(string name, CsrInfo csrInfo);
 }
 
 public class CsrInfo
@@ -72,7 +71,7 @@ public class OpenSSL: IOpenSSL
         
     }
 
-    private const string cnfTemplate = @"[req]
+    private const string CnfTemplate = @"[req]
 distinguished_name = req_distinguished_name
 prompt = no
 
@@ -88,7 +87,7 @@ CN = {dnsName}";
     {
         // create the cnf file from the template
         var cnfFile = Path.Combine(_workdir, $"{name}.cnf");
-        var cnf = cnfTemplate
+        var cnf = CnfTemplate
             .Replace("{country}", csrInfo.Country )
             .Replace("{state}", csrInfo.State)
             .Replace("{locality}", csrInfo.Locality)
@@ -101,14 +100,19 @@ CN = {dnsName}";
         return cnfFile;
     }
     
-    public async Task CreateKeyAndCsr(string name, CsrInfo csrInfo)
+    public async Task<(string keyfile, string csrfile)> CreateKeyAndCsr(string name, CsrInfo csrInfo)
     {
+        // create the cnf file using csrInfo and the template
         var inputCnfFile = await CreateCnfFile(name, csrInfo);
         var outputKeyFile = Path.Combine(_workdir, $"{name}.key");
         var outputCsrFile = Path.Combine(_workdir, $"{name}.csr");
 
         RunCommand(
             $"req -new -newkey rsa:2048 -nodes -keyout \"{outputKeyFile}\" -out \"{outputCsrFile}\" -config \"{inputCnfFile}\"");
+
+        return (
+            keyfile: $"{name}.key", 
+            csrfile: $"{name}.csr");
     }
 
     private void RunCommand(string arguments)

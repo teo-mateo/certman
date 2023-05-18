@@ -14,6 +14,12 @@ public static class WebApplicationBuilderExtensions
         builder.Services.AddSwaggerGen(c =>
         {
             c.SwaggerDoc("v1", new OpenApiInfo { Title = "Certman API", Version = "v1" });
+            
+            // add xml comments to swagger doc
+            c.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, "certman.xml"));
+
+            // add annotations to swagger doc
+            c.EnableAnnotations();
         });
 
         return builder;

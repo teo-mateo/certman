@@ -1,11 +1,6 @@
-using System.Runtime.InteropServices;
 using certman.Extensions;
-using certman.Models;
 using certman.Routes;
 using certman.Services;
-using Dapper;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.Data.Sqlite;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -21,6 +16,9 @@ builder.Logging.AddConsole();
 // add application services
 builder.Services.AddSingleton<IOpenSSL, OpenSSL>();
 
+// add controllers
+builder.Services.AddControllers();
+
 var app = builder.Build();
 
 app.Logger.LogInformation("Starting Certman API...");
@@ -31,22 +29,15 @@ app.UseSwaggerEx();
 // enable cors, all origins, all methods, all headers
 app.UseCors(c => c.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
 
-app.MapGet("/", () => "Hello World!");
-app.MapGet("/server-version", ServerVersion.GetServerVersion);
-app.MapPost("/create-db", DbUtils.CreateDb);
+app.MapGet("/", () => "Hello World!")
+    .WithDescription("HelloWorld");
 
-// POST endpoint "/ca-certs" to create a new CA cert; returns the certificate's id
-app.MapPost("/ca-certs", Certs.CreateCACert);
+app.MapGet("/server-version", ServerVersion.GetServerVersion)
+    .WithDescription("Get the server version");
 
-// GET endpoint to return all CA Certs. Returns an array of CACert objects
-app.MapGet("/ca-certs", Certs.GetAllCACerts);
+app.MapPost("/create-db", DbUtils.CreateDb)
+    .WithDescription("Create the database");
 
-app.MapGet("ca-certs/{id}/key", Certs.DownloadKeyFile);
-
-app.MapGet("ca-certs/{id}/pem", Certs.DownloadPemFile);
-
-app.MapPost("/trusted-certs", Certs.CreateTrustedCert);
-
-
+app.MapControllers();
 
 app.Run();
