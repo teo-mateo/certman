@@ -10,21 +10,18 @@ namespace certman.Controllers;
 public class CertsController : CertmanController
 {
     private readonly IOpenSSL _ssl;
+    private readonly ILogger<CertsController> _logger;
 
     //ctor
-    public CertsController(IOpenSSL ssl, IConfiguration config): base(config)
+    public CertsController(IOpenSSL ssl, IConfiguration config, ILogger<CertsController> logger): base(config)
     {
         _ssl = ssl;
+        _logger = logger;
     }
-    
-    // index
-    [HttpGet]
-    public Task<IActionResult> Index()
-    {
-        return Task.FromResult<IActionResult>(Ok("certman online"));
-    }
-    
-    // create a new CA cert
+
+    /// <summary>
+    /// Creates a new CA Certificate
+    /// </summary>
     [HttpPost("ca-certs")]
     public async Task<JsonResult> CreateCACert([FromBody] CreateCACertDto dto)
     {
@@ -39,10 +36,10 @@ public class CertsController : CertmanController
         }
 
         // create the private key file with the OpenSSL class
-        var keyfile = _ssl.CreatePrivateKey(dto.Name);
+        var keyfile = await _ssl.CreatePrivateKey(dto.Name);
 
         // create the PEM file with the OpenSSL class
-        var pemfile = _ssl.CreatePEMFile(keyfile);
+        var pemfile = await _ssl.CreatePEMFile(keyfile);
 
         // insert cert into db
         await using var insertCommand = connection.CreateCommand();
@@ -73,7 +70,9 @@ public class CertsController : CertmanController
         });
     }
     
-    // prune ca certs
+    /// <summary>
+    /// Prune CA Certs
+    /// </summary>
     [HttpDelete("ca-certs/prune")]
     public async Task<IActionResult> PruneCACerts()
     {
@@ -85,7 +84,9 @@ public class CertsController : CertmanController
         return Ok();
     }
     
-    // get all ca certs
+    /// <summary>
+    /// Gets all CA Certs
+    /// </summary>
     [HttpGet("ca-certs")]
     public async Task<IActionResult> GetAllCACerts()
     {
@@ -93,7 +94,9 @@ public class CertsController : CertmanController
         return Ok(certs);
     }
     
-    // download keyfile
+    /// <summary>
+    /// Downloads the key file part of a CA Cert
+    /// </summary>
     [HttpGet("ca-certs/{id}/keyfile")]
     public async Task<IActionResult> DownloadCACertKeyfile(int id)
     {
@@ -113,7 +116,9 @@ public class CertsController : CertmanController
         return File(stream, "application/octet-stream", cert.Keyfile);
     }
     
-    // download pemfile
+    /// <summary>
+    ///  Downloads the pem file part of a CA Cert
+    /// </summary>
     [HttpGet("ca-certs/{id}/pemfile")]
     public async Task<IActionResult> DownloadCACertPemfile(int id)
     {
@@ -133,7 +138,9 @@ public class CertsController : CertmanController
         return File(stream, "application/octet-stream", cert.Pemfile);
     }
     
-    //create trusted cert
+    /// <summary>
+    /// Creates a new trusted certificate, signed by the CA Cert
+    /// </summary>
     [HttpPost("ca-certs/{id}/certs")]
     public async Task<IActionResult> CreateTrustedCert(int id, [FromBody] CreateTrustedCertDto dto)
     {
@@ -143,17 +150,50 @@ public class CertsController : CertmanController
             return NotFound();
         }
         
-        await _ssl.CreateKeyAndCsr(dto.Name, new CsrInfo()
+        // copy the keyfile and pemfile of the CA Cert to the workdir
+        var keyfileCA = CopyKeyfileToWorkdir(cert);
+        var pemFileCA = CopyPemfileToWorkdir(cert);
+
+        var (keyfile, csrfile) = await _ssl.CreateKeyAndCsr(dto.Name, new CsrInfo()
         {
             Country = dto.Country ?? "",
             State = dto.State ?? "",
             Locality = dto.Locality ?? "",
             Organization = dto.Organization ?? "",
             OrganizationUnit = dto.OrganizationUnit ?? "",
-            DnsName = dto.DnsName
+            CommonName = dto.CommonName ?? dto.Name
         });
 
+        var extfile = await _ssl.CreateExtFile(dto.Name, dto.DnsNames, dto.IpAddresses);
+        
+        // create signed certificate using the private key, csr, and ext file
+        var crtfile = await _ssl.CreateSelfSignedCert(
+            dto.Name,
+            keyfileCA,
+            pemFileCA,
+            System.IO.Path.Combine(Config["Workdir"], csrfile),
+            System.IO.Path.Combine(Config["Workdir"], extfile));
+
+        var pfxfile = await _ssl.BundleSelfSignedCert(dto.Name, keyfile, crtfile);
         return Ok();
+    }
+
+    private string CopyPemfileToWorkdir(CACert cert)
+    {
+        var pemFileCA = Path.Combine(Config["Workdir"], cert.Pemfile);
+        System.IO.File.Copy(
+            Path.Combine(Config["Store"], cert.Pemfile),
+            pemFileCA);
+        return pemFileCA;
+    }
+
+    private string CopyKeyfileToWorkdir(CACert cert)
+    {
+        var keyfileCA = Path.Combine(Config["Workdir"], cert.Keyfile);
+        System.IO.File.Copy(
+            Path.Combine(Config["Store"], cert.Keyfile),
+            keyfileCA);
+        return keyfileCA;
     }
 
 

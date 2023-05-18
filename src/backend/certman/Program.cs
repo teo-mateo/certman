@@ -11,7 +11,10 @@ builder.AddSwagger();
 builder.Services.AddCors();
 
 // add logging
-builder.Logging.AddConsole();
+builder.Logging.AddSimpleConsole(options =>
+{
+    options.SingleLine = true;
+});
 
 // add application services
 builder.Services.AddSingleton<IOpenSSL, OpenSSL>();
