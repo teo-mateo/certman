@@ -114,7 +114,7 @@ public class OpenSSL: IOpenSSL
         
         // create extFile and write sb to extFile
         await File.WriteAllTextAsync(outputExtFile, stringBuilder.ToString());
-        return outputExtFile;
+        return $"{name}.ext";
     }
 
     public async Task<string> CreateSelfSignedCert(string name, string keyFileCA, string pemFileCA, string csrFile, string extFile)

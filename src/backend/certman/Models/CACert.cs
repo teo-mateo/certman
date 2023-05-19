@@ -8,4 +8,6 @@ public class CACert
     public string Keyfile { get; set; } = "";
     public string Pemfile { get; set; } = "";
     public DateTime CreatedAt { get; set; }
+    
+    public IEnumerable<Cert> Certs { get; set; } = Array.Empty<Cert>();
 }
