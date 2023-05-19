@@ -13,7 +13,12 @@ public class GetCertQueryHandler: CertmanHandler<GetTrustedCertQuery, Cert?>
     protected override async Task<Cert?> ExecuteAsync(GetTrustedCertQuery request, CancellationToken ctoken)
     {
         await using var connection = await GetOpenConnection();
-        var cert = await connection.QueryFirstOrDefaultAsync<Cert>("SELECT * FROM Certs WHERE Id = @id", new {request.Id});
+        var cert = await connection.QueryFirstOrDefaultAsync<Cert>(
+            "SELECT * FROM Certs WHERE Id = @id", 
+            new
+            {
+                id = request.Id
+            });
         await connection.CloseAsync();
         return cert; 
     }

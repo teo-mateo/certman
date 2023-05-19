@@ -13,12 +13,12 @@ public class CreateDbTablesCommandHandler : CertmanHandler<CreateDbTablesCommand
         await using var connection = await GetOpenConnection();
         // delete the db if it exists
         await using var deleteCommand = connection.CreateCommand();
-        deleteCommand.CommandText = "DROP TABLE IF EXISTS CACerts; DROP TABLE IF EXISTS Certs;";
+        deleteCommand.CommandText = "DROP TABLE IF EXISTS Certs; DROP TABLE IF EXISTS CACerts;";
         await deleteCommand.ExecuteNonQueryAsync(ctoken);
         
         // execute script from scripts/db.sql
         await using var scriptCommand = connection.CreateCommand();
-        scriptCommand.CommandText = await System.IO.File.ReadAllTextAsync("scripts/db.sql");
+        scriptCommand.CommandText = await System.IO.File.ReadAllTextAsync("scripts/db.sql", ctoken);
         await scriptCommand.ExecuteNonQueryAsync(ctoken);
 
         await connection.CloseAsync();

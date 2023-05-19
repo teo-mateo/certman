@@ -1,6 +1,7 @@
 ﻿using System.Text.Json;
 using certman.Controllers.Dto;
 using certman.CQRS.Queries;
+using certman.Extensions;
 using certman.Models;
 using certman.Services;
 using Dapper;
@@ -28,6 +29,10 @@ public class CreateTrustedCertCommandHandler : CertmanHandler<CreateTrustedCertC
             throw new Exception("CA Cert not found");
         }
         
+        await ThrowIfCertWithNameAlreadyExists(request.Dto.Name);
+
+        await _mediator.Send(new ClearWorkdirCommand(), ctoken);
+        
         // copy the keyfile and pemfile of the CA Cert to the workdir
         var keyFileCA = CopyKeyfileToWorkdir(caCert);
         var pemFileCA = CopyPemfileToWorkdir(caCert);
@@ -42,7 +47,10 @@ public class CreateTrustedCertCommandHandler : CertmanHandler<CreateTrustedCertC
             CommonName = request.Dto.CommonName ?? request.Dto.Name
         });
 
-        var extFile = await _ssl.CreateExtFile(request.Dto.Name, request.Dto.DnsNames, request.Dto.IpAddresses);
+        var extFile = await _ssl.CreateExtFile(
+            request.Dto.Name, 
+            request.Dto.DnsNames ?? Array.Empty<string>(), 
+            request.Dto.IpAddresses ?? Array.Empty<string>());
         
         // create signed certificate using the private key, csr, and ext file
         var crtFile = await _ssl.CreateSelfSignedCert(
@@ -56,31 +64,30 @@ public class CreateTrustedCertCommandHandler : CertmanHandler<CreateTrustedCertC
         
          
         // object with request.dto.DnsNames and request.dto.IpAddresses
-        var altNames = new
+        var altNames = JsonSerializer.Serialize(new AltNames()
         {
-            request.Dto.DnsNames,
-            request.Dto.IpAddresses
-        };
-        var altNamesJson = JsonSerializer.Serialize(altNames);
-
-        var cert = new Cert()
-        {
-            AltNames = altNamesJson,
-            CaCertId = request.Id,
-            Name = request.Dto.Name,
-            CreatedAt = DateTime.Now,
-            Csrfile = csrFile,
-            Extfile = extFile,
-            Keyfile = keyFile,
-            Password = request.Dto.Password,
-            Pfxfile = pfxFile
-        };
-
+            DnsNames = request.Dto.DnsNames ?? Array.Empty<string>(),
+            IpAddresses = request.Dto.IpAddresses ?? Array.Empty<string>()
+        });
+        
         // insert cert into db
         await using var connection = await GetOpenConnection();
         var id = await connection.ExecuteScalarAsync<int>(
-            "INSERT INTO Certs (CaCertId, Name, Keyfile, Csrfile, Extfile, Pfxfile, Password, CreatedAt) VALUES (@CaCertId, @Name, @Keyfile, @Csrfile, @Extfile, @Pfxfile, @Password, @CreatedAt); SELECT last_insert_rowid();",
-            cert);
+            @"INSERT INTO Certs (caCertId, Name, altNames, keyfile, csrfile, extfile, pfxfile, password, createdAt) 
+                 VALUES (@CaCertId, @Name, @altNames, @keyfile, @csrfile, @extfile, @pfxfile, @Password, @CreatedAt); 
+                 SELECT last_insert_rowid();",
+            new
+            {
+                CACertId = request.Id,
+                Name = request.Dto.Name,
+                altNames,
+                keyFile,
+                csrFile,
+                extFile,
+                pfxFile,
+                request.Dto.Password,
+                CreatedAt = DateTime.Now
+            });
 
         await connection.CloseAsync();
 
@@ -91,7 +98,7 @@ public class CreateTrustedCertCommandHandler : CertmanHandler<CreateTrustedCertC
     {
         var pemFileCA = Path.Combine(Config["Workdir"], cert.Pemfile);
         System.IO.File.Copy(
-            Path.Combine(Config["Store"], cert.Pemfile),
+            Path.Combine(Config["Store"], cert.Pemfile).ThrowIfFileNotExists(),
             pemFileCA);
         return pemFileCA;
     }
@@ -100,8 +107,19 @@ public class CreateTrustedCertCommandHandler : CertmanHandler<CreateTrustedCertC
     {
         var keyfileCA = Path.Combine(Config["Workdir"], cert.Keyfile);
         System.IO.File.Copy(
-            Path.Combine(Config["Store"], cert.Keyfile),
+            Path.Combine(Config["Store"], cert.Keyfile).ThrowIfFileNotExists(),
             keyfileCA);
         return keyfileCA;
+    }
+
+    private async Task ThrowIfCertWithNameAlreadyExists(string name)
+    {
+        var connection = await GetOpenConnection();
+        var count = await connection.ExecuteScalarAsync<int>(
+            "SELECT COUNT(*) FROM Certs WHERE Name = @name", 
+            new { name });
+        
+        if (count > 0)
+            throw new Exception($"Cert with name {name} already exists");
     }
 }

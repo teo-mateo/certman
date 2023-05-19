@@ -1,6 +1,7 @@
 ﻿using certman.Controllers.Dto;
 using certman.CQRS.Commands;
 using certman.CQRS.Queries;
+using certman.Extensions;
 using certman.Models;
 using certman.Services;
 using MediatR;
@@ -29,6 +30,12 @@ public class CertsController : CertmanController
     [HttpPost("ca-certs")]
     public async Task<JsonResult> CreateCACert([FromBody] CreateCACertDto dto)
     {
+        if (!ModelState.IsValid)
+        {
+            // return error and all ModelState errors
+            return new JsonResult(ModelState.GetErrorMessages());
+        }
+
         var result = await _mediator.Send(new CreateCACertCommand(dto));
         return new JsonResult(result);
     }
@@ -119,8 +126,14 @@ public class CertsController : CertmanController
     [HttpPost("ca-certs/{id}/certs")]
     public async Task<IActionResult> CreateTrustedCert(int id, [FromBody] CreateTrustedCertDto dto)
     {
-        var pfxFile = await _mediator.Send(new CreateTrustedCertCommand(id, dto));
-        return Ok(pfxFile);
+        if (!ModelState.IsValid)
+        {
+            // return error and all ModelState errors
+            return new JsonResult(ModelState.GetErrorMessages());
+        }
+        
+        var cert = await _mediator.Send(new CreateTrustedCertCommand(id, dto));
+        return Ok(cert);
         
     }
 

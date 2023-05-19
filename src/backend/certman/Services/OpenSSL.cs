@@ -169,7 +169,7 @@ public class OpenSSL: IOpenSSL
         _logger.LogError("[OPENSSL] {Error}", error);
         
         await process.WaitForExitAsync();
-        process.ThrowIfBadExit();
+        process.ThrowIfBadExit(error);
     }
     
     private const string CnfTemplate = @"[req]

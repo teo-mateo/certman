@@ -31,8 +31,6 @@
       </None>
     </ItemGroup>
     <ItemGroup>
-      <Folder Include="CQRS\Commands\Base\" />
-      <Folder Include="CQRS\Queries\Base\" />
       <Folder Include="Dtos\" />
       <Folder Include="Routes\" />
     </ItemGroup>
