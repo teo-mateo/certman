@@ -1,3 +1,4 @@
+using System.Reflection;
 using certman.Extensions;
 using certman.Services;
 
@@ -21,10 +22,18 @@ builder.Services.AddSingleton<IOpenSSL, OpenSSL>();
 // add controllers
 builder.Services.AddControllers();
 
+// configure route options
 builder.Services.Configure<RouteOptions>(options =>
 {
     options.LowercaseUrls = true;
     options.LowercaseQueryStrings = true;
+});
+
+// add mediatr
+builder.Services.AddMediatR(config =>
+{
+    config.Lifetime = ServiceLifetime.Singleton;
+    config.RegisterServicesFromAssembly(Assembly.GetExecutingAssembly());
 });
 
 var app = builder.Build();

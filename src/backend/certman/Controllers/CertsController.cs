@@ -1,8 +1,9 @@
-﻿using System.Text.Json;
-using certman.Controllers.Dto;
+﻿using certman.Controllers.Dto;
+using certman.CQRS.Commands;
+using certman.CQRS.Queries;
 using certman.Models;
 using certman.Services;
-using Dapper;
+using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
 namespace certman.Controllers;
@@ -12,12 +13,14 @@ public class CertsController : CertmanController
 {
     private readonly IOpenSSL _ssl;
     private readonly ILogger<CertsController> _logger;
+    private readonly IMediator _mediator;
 
     //ctor
-    public CertsController(IOpenSSL ssl, IConfiguration config, ILogger<CertsController> logger): base(config)
+    public CertsController(IOpenSSL ssl, IConfiguration config, ILogger<CertsController> logger, IMediator mediator): base(config)
     {
         _ssl = ssl;
         _logger = logger;
+        _mediator = mediator;
     }
 
     /// <summary>
@@ -26,49 +29,8 @@ public class CertsController : CertmanController
     [HttpPost("ca-certs")]
     public async Task<JsonResult> CreateCACert([FromBody] CreateCACertDto dto)
     {
-        await using var connection = await GetOpenConnection();
-        
-        //return if cert already exists, checking the db by name
-        var cert = await connection.QueryFirstOrDefaultAsync<CACert>("SELECT * FROM CACerts WHERE Name = @name", new {name = dto.Name});
-        if (cert != null)
-        {
-            await connection.CloseAsync();
-            return new JsonResult(new {cert.Id, cert.Keyfile, cert.Pemfile});
-        }
-
-        // create the private key file with the OpenSSL class
-        var keyfile = await _ssl.CreatePrivateKey(dto.Name);
-
-        // create the PEM file with the OpenSSL class
-        var pemfile = await _ssl.CreatePEMFile(keyfile);
-
-        // insert cert into db
-        await using var insertCommand = connection.CreateCommand();
-        insertCommand.CommandText =
-            "INSERT INTO CACerts (Name, Keyfile, Pemfile, CreatedAt) VALUES (@name, @keyfile, @pemfile, @createdAt); SELECT last_insert_rowid();";
-        insertCommand.Parameters.AddWithValue("@name", dto.Name);
-        insertCommand.Parameters.AddWithValue("@keyfile", keyfile);
-        insertCommand.Parameters.AddWithValue("@pemfile", pemfile);
-        insertCommand.Parameters.AddWithValue("@createdAt", DateTime.UtcNow);
-        var id = await insertCommand.ExecuteScalarAsync();
-
-        await connection.CloseAsync();
-
-        // move files from workdir to store
-        var keyFile = Path.Combine(Config["Workdir"], keyfile);
-        var keyFileDest = Path.Combine(Config["Store"], keyfile);
-        System.IO.File.Move(keyFile, keyFileDest);
-            
-        var pemFile = Path.Combine(Config["Workdir"], pemfile);
-        var pemFileDest = Path.Combine(Config["Store"], pemfile);
-        System.IO.File.Move(pemFile, pemFileDest);
-        
-        return new JsonResult(new
-        {
-            Id = Convert.ToInt32(id), 
-            Keyfile = keyfile, 
-            Pemfile = pemfile
-        });
+        var result = await _mediator.Send(new CreateCACertCommand(dto));
+        return new JsonResult(result);
     }
     
     /// <summary>
@@ -77,7 +39,7 @@ public class CertsController : CertmanController
     [HttpDelete("ca-certs/prune")]
     public async Task<IActionResult> PruneCACerts()
     {
-        var certs = await GetAllCACertsInternal();
+        var certs = await _mediator.Send(new GetAllCACertsQuery());
         foreach (var cert in certs)
         {
             await PruneCACert(cert);
@@ -91,7 +53,7 @@ public class CertsController : CertmanController
     [HttpGet("ca-certs")]
     public async Task<IActionResult> GetAllCACerts()
     {
-        var certs = await GetAllCACertsInternal();
+        var certs = await _mediator.Send(new GetAllCACertsQuery());
         return Ok(certs);
     }
 
@@ -99,19 +61,13 @@ public class CertsController : CertmanController
     [HttpGet("ca-certs/{id}")]
     public async Task<IActionResult> GetCACert(int id)
     {
-        var cert = await GetCACertInternal(id);
-        var trustedCerts = await GetTrustedCertsInternal(id);
-        cert.Certs = trustedCerts.ToList();
-        return Ok(cert);
-    }
+        var caCert = await _mediator.Send(new GetCACertQuery(id));
+        if (caCert == null)
+            return NotFound();
 
-    private async Task<IEnumerable<Cert>> GetTrustedCertsInternal(int id)
-    {
-        await using var connection = await GetOpenConnection();
-        var certs = await connection.QueryAsync<Cert>("SELECT * FROM Certs WHERE CACertId = @id", new {id});
-        await connection.CloseAsync();
-        return certs;
+        return Ok(caCert);
     }
+    
 
     /// <summary>
     /// Downloads the key file part of a CA Cert
@@ -119,7 +75,7 @@ public class CertsController : CertmanController
     [HttpGet("ca-certs/{id}/keyfile")]
     public async Task<IActionResult> DownloadCACertKeyfile(int id)
     {
-        var cert = await GetCACertInternal(id);
+        var cert = await _mediator.Send(new GetCACertQuery(id));
         if (cert == null)
         {
             return NotFound();
@@ -141,7 +97,7 @@ public class CertsController : CertmanController
     [HttpGet("ca-certs/{id}/pemfile")]
     public async Task<IActionResult> DownloadCACertPemfile(int id)
     {
-        var cert = await GetCACertInternal(id);
+        var cert = await _mediator.Send(new GetCACertQuery(id));
         if (cert == null)
         {
             return NotFound();
@@ -163,99 +119,11 @@ public class CertsController : CertmanController
     [HttpPost("ca-certs/{id}/certs")]
     public async Task<IActionResult> CreateTrustedCert(int id, [FromBody] CreateTrustedCertDto dto)
     {
-        var caCert = await GetCACertInternal(id);
-        if (caCert == null)
-        {
-            return NotFound();
-        }
-        
-        // copy the keyfile and pemfile of the CA Cert to the workdir
-        var keyFileCA = CopyKeyfileToWorkdir(caCert);
-        var pemFileCA = CopyPemfileToWorkdir(caCert);
-
-        var (keyFile, csrFile) = await _ssl.CreateKeyAndCsr(dto.Name, new CsrInfo()
-        {
-            Country = dto.Country ?? "",
-            State = dto.State ?? "",
-            Locality = dto.Locality ?? "",
-            Organization = dto.Organization ?? "",
-            OrganizationUnit = dto.OrganizationUnit ?? "",
-            CommonName = dto.CommonName ?? dto.Name
-        });
-
-        var extFile = await _ssl.CreateExtFile(dto.Name, dto.DnsNames, dto.IpAddresses);
-        
-        // create signed certificate using the private key, csr, and ext file
-        var crtFile = await _ssl.CreateSelfSignedCert(
-            dto.Name,
-            keyFileCA,
-            pemFileCA,
-            System.IO.Path.Combine(Config["Workdir"], csrFile),
-            System.IO.Path.Combine(Config["Workdir"], extFile));
-
-        var pfxFile = await _ssl.BundleSelfSignedCert(dto.Name, keyFile, crtFile, dto.Password);
-        
-         
-        // object with dto.DnsNames and dto.IpAddresses
-        var altNames = new
-        {
-            dto.DnsNames,
-            dto.IpAddresses
-        };
-        var altNamesJson = JsonSerializer.Serialize(altNames);
-
-        var cert = new Cert()
-        {
-            AltNames = altNamesJson,
-            CaCertId = id,
-            Name = dto.Name,
-            CreatedAt = DateTime.Now,
-            Csrfile = csrFile,
-            Extfile = extFile,
-            Keyfile = keyFile,
-            Password = dto.Password,
-            Pfxfile = pfxFile
-        };
-
-        // insert cert into db
-        await using var connection = await GetOpenConnection();
-        await connection.ExecuteAsync(
-            "INSERT INTO Certs (CaCertId, Name, Keyfile, Csrfile, Extfile, Pfxfile, Password, CreatedAt) VALUES (@CaCertId, @Name, @Keyfile, @Csrfile, @Extfile, @Pfxfile, @Password, @CreatedAt)",
-            cert);
-
-        await connection.CloseAsync();
-
+        var pfxFile = await _mediator.Send(new CreateTrustedCertCommand(id, dto));
         return Ok(pfxFile);
         
     }
 
-    private string CopyPemfileToWorkdir(CACert cert)
-    {
-        var pemFileCA = Path.Combine(Config["Workdir"], cert.Pemfile);
-        System.IO.File.Copy(
-            Path.Combine(Config["Store"], cert.Pemfile),
-            pemFileCA);
-        return pemFileCA;
-    }
-
-    private string CopyKeyfileToWorkdir(CACert cert)
-    {
-        var keyfileCA = Path.Combine(Config["Workdir"], cert.Keyfile);
-        System.IO.File.Copy(
-            Path.Combine(Config["Store"], cert.Keyfile),
-            keyfileCA);
-        return keyfileCA;
-    }
-
-
-    private async Task<CACert> GetCACertInternal(int id)
-    {
-        await using var connection = await GetOpenConnection();
-        var cert = await connection.QueryFirstOrDefaultAsync<CACert>("SELECT * FROM CACerts WHERE Id = @id", new {id});
-        await connection.CloseAsync();
-        return cert;
-    }
-    
     /// <summary>
     /// Verifies if the key and pem files exist, if not, deletes the cert from the db
     /// </summary>
@@ -288,16 +156,4 @@ public class CertsController : CertmanController
         // close connection
         await connection.CloseAsync();
     }
-    
-    private async Task<IEnumerable<CACert>> GetAllCACertsInternal()
-    {
-        await using var connection = await GetOpenConnection();
-        
-        // get all certs from db with dapper
-        var certs = await connection.QueryAsync<CACert>("SELECT * FROM CACerts");
-        await connection.CloseAsync();
-        return certs!;
-    }
-    
-    // get trusted cert (Cert) from db, by
 }
