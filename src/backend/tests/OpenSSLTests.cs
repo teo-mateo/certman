@@ -1,4 +1,5 @@
-﻿using certman.Services;
+﻿using certman.Extensions;
+using certman.Services;
 using FluentAssertions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -35,26 +36,32 @@ public class OpenSSLTests
         Assert.True(true);
     }
     
-    [Fact]
-    public async Task OpenSSL_CreatePrivateKey_Test()
+    // run test with multiple data sets
+    [Theory]
+    [InlineData("test")]
+    [InlineData("this is a test")]
+    public async Task OpenSSL_CreatePrivateKey_Test(string name)
     {
-        await _openSSL.CreatePrivateKey("test");
-        Assert.True(File.Exists(Path.Combine(WorkDir, "test.key")));
+        await _openSSL.CreatePrivateKey(name);
+        Assert.True(File.Exists(Path.Combine(WorkDir, $"{name.SanitizeFileName()}.key")));
     }
 
-    [Fact]
-    public async Task OpenSSL_CreatePEMFile_Test()
+    [Theory]
+    [InlineData("test")]
+    [InlineData("this is a test")]
+    public async Task OpenSSL_CreatePEMFile_Test(string name)
     {
-        var keyFile = await _openSSL.CreatePrivateKey("test");
+        var keyFile = await _openSSL.CreatePrivateKey(name);
         await _openSSL.CreatePEMFile(keyFile);
-        Assert.True(File.Exists(Path.Combine(WorkDir, "test.pem")));
+        Assert.True(File.Exists(Path.Combine(WorkDir, $"{name.SanitizeFileName()}.pem")));
     }
 
-    [Fact]
-    public async Task OpenSSL_CreateKeyAndCsr_Test()
+    [Theory]
+    [InlineData("mywebsite")]
+    [InlineData("my website")]
+    public async Task OpenSSL_CreateKeyAndCsr_Test(string name)
     {
-        await _openSSL.CreatePrivateKey("test");
-        var result = await _openSSL.CreateKeyAndCsr("test", new CsrInfo()
+        var result = await _openSSL.CreateKeyAndCsr(name, new CsrInfo()
         {
             Country = "BE",
             Locality = "Brussels",
@@ -64,24 +71,25 @@ public class OpenSSLTests
             CommonName = "CommonName"
         });
         
-        result.keyfile.Should().Be("test.key");
-        result.csrfile.Should().Be("test.csr");
+        result.keyFile.Should().Be($"{name.SanitizeFileName()}.key");
+        result.csrFile.Should().Be($"{name.SanitizeFileName()}.csr");
         
-        Assert.True(File.Exists(Path.Combine(WorkDir, "test.key")));
-        Assert.True(File.Exists(Path.Combine(WorkDir, "test.csr")));
+        Assert.True(File.Exists(Path.Combine(WorkDir, $"{name.SanitizeFileName()}.key")));
+        Assert.True(File.Exists(Path.Combine(WorkDir, $"{name.SanitizeFileName()}.csr")));
     }
     
-    [Fact]
-    public async Task OpenSSL_CreateExtFile_Test()
+    [Theory]
+    [InlineData("test")]
+    [InlineData("this is a test")]
+    public async Task OpenSSL_CreateExtFile_Test(string name)
     {
-        var result = await _openSSL.CreateExtFile(
-            "test", 
+        var result = await _openSSL.CreateExtFile(name, 
             new[] { "test1.com", "test2.com" },
             new[] { "192.168.1.1", "192.168.1.2" });
         
-        Assert.True(File.Exists(Path.Combine(WorkDir, "test.ext")));
+        Assert.True(File.Exists(Path.Combine(WorkDir, $"{name.SanitizeFileName()}.ext")));
         
-        var extFile = await File.ReadAllTextAsync(Path.Combine(WorkDir, "test.ext"));
+        var extFile = await File.ReadAllTextAsync(Path.Combine(WorkDir, $"{name.SanitizeFileName()}.ext"));
         extFile.Trim().Should().Be(@"authorityKeyIdentifier=keyid,issuer
 basicConstraints=CA:FALSE
 keyUsage = digitalSignature, nonRepudiation, keyEncipherment, dataEncipherment
@@ -94,34 +102,74 @@ IP.1 = 192.168.1.1
 IP.2 = 192.168.1.2".Trim());
     }
 
-    [Fact]
-    public async Task OpenSSL_CreateSelfSignedCert_Test()
+    [Theory]
+    [InlineData("authorityame", "mywebsite")]
+    [InlineData("authority name", "my cool web site")]
+    public async Task OpenSSL_CreateSelfSignedCert_Test(string authorityName, string name)
     {
-        await _openSSL.CreatePrivateKey("test");
-        await _openSSL.CreatePEMFile("test.key");
-        await _openSSL.CreateKeyAndCsr("mywebsite", new CsrInfo()
-        {
-            Country = "BE",
-            Locality = "Brussels",
-            Organization = "Test",
-            OrganizationUnit = "TestUnit",
-            State = "BrusselsState",
-            CommonName = "CommonName"
-        });
-        await _openSSL.CreateExtFile(
-            "mywebsite",
+        var keyFileCA = await _openSSL.CreatePrivateKey(authorityName);
+        var pemFileCA = await _openSSL.CreatePEMFile(keyFileCA);
+        var (keyFile, csrFile) = await _openSSL.CreateKeyAndCsr(
+            name,
+            new CsrInfo()
+            {
+                Country = "BE",
+                Locality = "Brussels",
+                Organization = "Test",
+                OrganizationUnit = "TestUnit",
+                State = "BrusselsState",
+                CommonName = "CommonName"
+            });
+        var extFile = await _openSSL.CreateExtFile(
+            name,
             new[] { "test1.com", "test2.com" },
             new[] { "192.168.1.1" });
-        var pfxFile = await _openSSL.CreateSelfSignedCert(
-            "mywebsite", 
-            "test.key", 
-            "test.pem", 
-            "mywebsite.csr", 
-            "mywebsite.ext");
+        var crtFile = await _openSSL.CreateSelfSignedCert(
+            name, 
+            keyFileCA, 
+            pemFileCA, 
+            csrFile, 
+            extFile);
         
-        // assert pfx file exists in workdir
+        // assert crt file exists in workdir
+        Assert.True(File.Exists(Path.Combine(WorkDir, crtFile)));
+    }
+    
+    //unit test to test the bundle self signed cert
+    [Theory]
+    [InlineData("authorityame", "mywebsite")]
+    [InlineData("authority name", "my cool web site")]
+    public async Task OpenSSL_BundleSelfSignedCert_Test(string authorityName, string name)
+    {
+        var keyFileCA = await _openSSL.CreatePrivateKey(authorityName);
+        var pemFileCA = await _openSSL.CreatePEMFile(keyFileCA);
+        var (keyFile, csrFile) = await _openSSL.CreateKeyAndCsr(
+            name,
+            new CsrInfo()
+            {
+                Country = "BE",
+                Locality = "Brussels",
+                Organization = "Test",
+                OrganizationUnit = "TestUnit",
+                State = "BrusselsState",
+                CommonName = "CommonName"
+            });
+        var extFile = await _openSSL.CreateExtFile(
+            name,
+            new[] { "test1.com", "test2.com" },
+            new[] { "192.168.1.1" });
+        var crtFile = await _openSSL.CreateSelfSignedCert(
+            name, 
+            keyFileCA, 
+            pemFileCA, 
+            csrFile, 
+            extFile);
+        
+        var pfxFile = await _openSSL.BundleSelfSignedCert(name, keyFile, crtFile, "test-password");
+        
         Assert.True(File.Exists(Path.Combine(WorkDir, pfxFile)));
     }
+    
 
     private void CleanupWorkDir()
     {

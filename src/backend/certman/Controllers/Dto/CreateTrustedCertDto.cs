@@ -9,5 +9,6 @@ public record CreateTrustedCertDto(
     string? OrganizationUnit,
     string? CommonName,
     string[] DnsNames,
-    string[] IpAddresses
+    string[] IpAddresses,
+    string Password
 );

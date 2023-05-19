@@ -1,5 +1,4 @@
 using certman.Extensions;
-using certman.Routes;
 using certman.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -22,6 +21,12 @@ builder.Services.AddSingleton<IOpenSSL, OpenSSL>();
 // add controllers
 builder.Services.AddControllers();
 
+builder.Services.Configure<RouteOptions>(options =>
+{
+    options.LowercaseUrls = true;
+    options.LowercaseQueryStrings = true;
+});
+
 var app = builder.Build();
 
 app.Logger.LogInformation("Starting Certman API...");
@@ -31,15 +36,6 @@ app.UseSwaggerEx();
 
 // enable cors, all origins, all methods, all headers
 app.UseCors(c => c.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
-
-app.MapGet("/", () => "Hello World!")
-    .WithDescription("HelloWorld");
-
-app.MapGet("/server-version", ServerVersion.GetServerVersion)
-    .WithDescription("Get the server version");
-
-app.MapPost("/create-db", DbUtils.CreateDb)
-    .WithDescription("Create the database");
 
 app.MapControllers();
 

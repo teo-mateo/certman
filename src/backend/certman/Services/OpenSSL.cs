@@ -4,34 +4,6 @@ using certman.Extensions;
 
 namespace certman.Services;
 
-public interface IOpenSSL
-{
-    public Task<string> CreatePrivateKey(string name);
-    public Task<string> CreatePEMFile(string keyfile);
-    public Task<(string keyfile, string csrfile)> CreateKeyAndCsr(string name, CsrInfo csrInfo);
-    public Task<string> CreateExtFile(string name, string[] dnsNames, string[] ipAddresses);
-
-    public Task<string> CreateSelfSignedCert(
-        string name, 
-        string keyfileCA, 
-        string pemfileCA, 
-        string csrfile,
-        string extfile);
-
-    public Task<string> BundleSelfSignedCert(string name, string keyfile, string crtfile);
-
-}
-
-public class CsrInfo
-{
-    public string Country { get; set; } = "";
-    public string State { get; set; } = "";
-    public string Locality { get; set; } = "";
-    public string Organization { get; set; } = "";
-    public string OrganizationUnit { get; set; } = "";
-    public string CommonName { get; set; } = "";
-}
-
 public class OpenSSL: IOpenSSL
 {
     //ILogger
@@ -54,6 +26,8 @@ public class OpenSSL: IOpenSSL
     /// </summary>
     public async Task<string> CreatePrivateKey(string name)
     {
+        name = name.SanitizeFileName();
+
         var outputKeyFile = Path.Combine(_workdir, $"{name}.key").ThrowIfFileExists();
 
         await RunCommand($"genrsa -out \"{outputKeyFile}\" 2048");
@@ -65,16 +39,16 @@ public class OpenSSL: IOpenSSL
     /// <summary>
     /// this method creates the PEM file for the given private key and returns the PEM file name.
     /// </summary>
-    public async Task<string> CreatePEMFile(string keyfile)
+    public async Task<string> CreatePEMFile(string keyFile)
     {
-        var inputKeyFile = Path.Combine(_workdir, keyfile).ThrowIfFileNotExists();
+        var inputKeyFile = Path.Combine(_workdir, keyFile).ThrowIfFileNotExists();
 
         // the name of the pem file is the same as the key file, but with a .pem extension
-        var name = Path.GetFileNameWithoutExtension(keyfile);
+        var name = Path.GetFileNameWithoutExtension(keyFile);
         
         var outputPemFile = Path.Combine(_workdir, $"{name}.pem").ThrowIfFileExists();
 
-        await RunCommand($"req -new -x509 -key \"{inputKeyFile}\" -out \"{outputPemFile}\" -days 3650 -subj /CN={name}");
+        await RunCommand($"req -new -x509 -key \"{inputKeyFile}\" -out \"{outputPemFile}\" -days 3650 -subj /CN=\"{name}\"");
         
         // return the output file
         return $"{name}.pem";
@@ -83,6 +57,8 @@ public class OpenSSL: IOpenSSL
     
     private async Task<string> CreateCnfFile(string name, CsrInfo csrInfo)
     {
+        name = name.SanitizeFileName();
+        
         // create the cnf file from the template
         var outputCnfFile = Path.Combine(_workdir, $"{name}.cnf").ThrowIfFileExists();
         var cnf = CnfTemplate
@@ -98,8 +74,10 @@ public class OpenSSL: IOpenSSL
         return outputCnfFile;
     }
     
-    public async Task<(string keyfile, string csrfile)> CreateKeyAndCsr(string name, CsrInfo csrInfo)
+    public async Task<(string keyFile, string csrFile)> CreateKeyAndCsr(string name, CsrInfo csrInfo)
     {
+        name = name.SanitizeFileName();
+        
         // create the cnf file using csrInfo and the template
         var inputCnfFile = await CreateCnfFile(name, csrInfo);
         var outputKeyFile = Path.Combine(_workdir, $"{name}.key").ThrowIfFileExists();
@@ -109,12 +87,14 @@ public class OpenSSL: IOpenSSL
             $"req -new -newkey rsa:2048 -nodes -keyout \"{outputKeyFile}\" -out \"{outputCsrFile}\" -config \"{inputCnfFile}\"");
 
         return (
-            keyfile: $"{name}.key", 
-            csrfile: $"{name}.csr");
+            keyFile: $"{name}.key", 
+            csrFile: $"{name}.csr");
     }
 
     public async Task<string> CreateExtFile(string name, string[] dnsNames, string[] ipAddresses)
     {
+        name = name.SanitizeFileName();
+        
         // if ext file with name exists, throw exception
         var outputExtFile = Path.Combine(_workdir, $"{name}.ext").ThrowIfFileExists();
 
@@ -137,23 +117,28 @@ public class OpenSSL: IOpenSSL
         return outputExtFile;
     }
 
-    public async Task<string> CreateSelfSignedCert(string name, string keyfileCA, string pemfileCA, string csrfile, string extfile)
+    public async Task<string> CreateSelfSignedCert(string name, string keyFileCA, string pemFileCA, string csrFile, string extFile)
     {
-        var inputKeyFileCA = Path.Combine(_workdir, keyfileCA).ThrowIfFileNotExists();
-        var inputPemFileCA = Path.Combine(_workdir, pemfileCA).ThrowIfFileNotExists();
-        var inputCsrFile = Path.Combine(_workdir, csrfile).ThrowIfFileNotExists();
-        var inputExtFile = Path.Combine(_workdir, extfile).ThrowIfFileNotExists();
+        name = name.SanitizeFileName();
+        
+        var inputKeyFileCA = Path.Combine(_workdir, keyFileCA).ThrowIfFileNotExists();
+        var inputPemFileCA = Path.Combine(_workdir, pemFileCA).ThrowIfFileNotExists();
+        var inputCsrFile = Path.Combine(_workdir, csrFile).ThrowIfFileNotExists();
+        var inputExtFile = Path.Combine(_workdir, extFile).ThrowIfFileNotExists();
         var outputCrtFile = Path.Combine(_workdir, $"{name}.crt").ThrowIfFileExists();
         await RunCommand($"x509 -req -in \"{inputCsrFile}\" -CA \"{inputPemFileCA}\" -CAkey \"{inputKeyFileCA}\" -CAcreateserial -out \"{outputCrtFile}\" -days 365 -sha256 -extfile \"{inputExtFile}\"");
         return $"{name}.crt";
     }
 
-    public async Task<string> BundleSelfSignedCert(string name, string keyfile, string crtfile)
+    public async Task<string> BundleSelfSignedCert(string name, string keyFile, string crtFile, string password)
     {
-        var inputKeyFile = Path.Combine(_workdir, keyfile).ThrowIfFileNotExists();
-        var inputCrtFile = Path.Combine(_workdir, crtfile).ThrowIfFileNotExists();
+        name = name.SanitizeFileName();
+        
+        var inputKeyFile = Path.Combine(_workdir, keyFile).ThrowIfFileNotExists();
+        var inputCrtFile = Path.Combine(_workdir, crtFile).ThrowIfFileNotExists();
         var outputPfxFile = Path.Combine(_workdir, $"{name}.pfx").ThrowIfFileExists();
-        await RunCommand($"pkcs12 -export -out \"{outputPfxFile}\" -inkey \"{inputKeyFile}\" -in \"{inputCrtFile}\"");
+        await RunCommand(
+            $"pkcs12 -export -out \"{outputPfxFile}\" -inkey \"{inputKeyFile}\" -in \"{inputCrtFile}\" -passout pass:{password}");
         return $"{name}.pfx";
     }
 
@@ -169,13 +154,20 @@ public class OpenSSL: IOpenSSL
             UseShellExecute = false
         };
 
-        startInfo.RedirectStandardOutput = true;
-        startInfo.RedirectStandardError = true;
-        
         // run the openssl command
-        var process = Process.Start(startInfo)!;
-        process.OutputDataReceived += (sender, args) => _logger.LogInformation("[OPENSSL] {Output}", args.Data);
-        process.ErrorDataReceived += (sender, args) => _logger.LogError("[OPENSSL] {Error}", args.Data);
+        var process = new Process()
+        {
+            StartInfo = startInfo
+        };
+        
+        process.Start();
+        
+        string output = await process.StandardOutput.ReadToEndAsync();
+        _logger.LogInformation("[OPENSSL] {Output}", output);
+        
+        string error = await process.StandardError.ReadToEndAsync();
+        _logger.LogError("[OPENSSL] {Error}", error);
+        
         await process.WaitForExitAsync();
         process.ThrowIfBadExit();
     }

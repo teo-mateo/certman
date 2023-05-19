@@ -19,6 +19,7 @@ CREATE TABLE IF NOT EXISTS Certs (
                                      csrfile TEXT NOT NULL,
                                      extfile TEXT NOT NULL,
                                      pfxfile TEXT NOT NULL,
+                                     password TEXT NOT NULL,
                                      createdAt TIMESTAMP NOT NULL,
                                      FOREIGN KEY (caCertId) REFERENCES CACerts (id)
 );

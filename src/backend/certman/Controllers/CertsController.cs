@@ -151,10 +151,10 @@ public class CertsController : CertmanController
         }
         
         // copy the keyfile and pemfile of the CA Cert to the workdir
-        var keyfileCA = CopyKeyfileToWorkdir(cert);
+        var keyFileCA = CopyKeyfileToWorkdir(cert);
         var pemFileCA = CopyPemfileToWorkdir(cert);
 
-        var (keyfile, csrfile) = await _ssl.CreateKeyAndCsr(dto.Name, new CsrInfo()
+        var (keyFile, csrFile) = await _ssl.CreateKeyAndCsr(dto.Name, new CsrInfo()
         {
             Country = dto.Country ?? "",
             State = dto.State ?? "",
@@ -164,18 +164,18 @@ public class CertsController : CertmanController
             CommonName = dto.CommonName ?? dto.Name
         });
 
-        var extfile = await _ssl.CreateExtFile(dto.Name, dto.DnsNames, dto.IpAddresses);
+        var extFile = await _ssl.CreateExtFile(dto.Name, dto.DnsNames, dto.IpAddresses);
         
         // create signed certificate using the private key, csr, and ext file
-        var crtfile = await _ssl.CreateSelfSignedCert(
+        var crtFile = await _ssl.CreateSelfSignedCert(
             dto.Name,
-            keyfileCA,
+            keyFileCA,
             pemFileCA,
-            System.IO.Path.Combine(Config["Workdir"], csrfile),
-            System.IO.Path.Combine(Config["Workdir"], extfile));
+            System.IO.Path.Combine(Config["Workdir"], csrFile),
+            System.IO.Path.Combine(Config["Workdir"], extFile));
 
-        var pfxfile = await _ssl.BundleSelfSignedCert(dto.Name, keyfile, crtfile);
-        return Ok();
+        var pfxFile = await _ssl.BundleSelfSignedCert(dto.Name, keyFile, crtFile, dto.Password);
+        return Ok(pfxFile);
     }
 
     private string CopyPemfileToWorkdir(CACert cert)
