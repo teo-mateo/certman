@@ -19,8 +19,6 @@ public class GetCACertQueryHandler : CertmanHandler<GetCACertQuery, CACert?>
         if (cert == null)
             return null;
 
-        
-        
         var certs = await connection.QueryAsync<Cert>("SELECT * FROM Certs WHERE CACertId = @id", new {id=request.Id});
         cert.Certs = certs;
 
@@ -30,7 +28,6 @@ public class GetCACertQueryHandler : CertmanHandler<GetCACertQuery, CACert?>
             c.AltNames = JsonSerializer.Deserialize<AltNames>(c.AltNames.ToString()!)!;
         }
         
-        await connection.CloseAsync();
         return cert;
     }
 } 

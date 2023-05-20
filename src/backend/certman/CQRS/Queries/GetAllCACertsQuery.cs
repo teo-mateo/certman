@@ -14,7 +14,6 @@ public class GetAllCACertsQueryHandler : CertmanHandler<GetAllCACertsQuery, CACe
     {
         await using var connection = await GetOpenConnection();
         var certs = await connection.QueryAsync<CACert>("SELECT * FROM CACerts");
-        await connection.CloseAsync();
         return certs.ToArray();
     }
 }

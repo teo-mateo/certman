@@ -34,8 +34,8 @@ public class CreateTrustedCertCommandHandler : CertmanHandler<CreateTrustedCertC
         await _mediator.Send(new ClearWorkdirCommand(), ctoken);
         
         // copy the keyfile and pemfile of the CA Cert to the workdir
-        var keyFileCA = CopyKeyfileToWorkdir(caCert);
-        var pemFileCA = CopyPemfileToWorkdir(caCert);
+        var keyFileCA = CopyFromStoreToWorkdir(caCert.Keyfile);
+        var pemFileCA = CopyFromStoreToWorkdir(caCert.Pemfile);
 
         var (keyFile, csrFile) = await _ssl.CreateKeyAndCsr(request.Dto.Name, new CsrInfo()
         {
@@ -57,12 +57,11 @@ public class CreateTrustedCertCommandHandler : CertmanHandler<CreateTrustedCertC
             request.Dto.Name,
             keyFileCA,
             pemFileCA,
-            System.IO.Path.Combine(Config["Workdir"], csrFile),
-            System.IO.Path.Combine(Config["Workdir"], extFile));
+            Path.Combine(Config["Workdir"], csrFile),
+            Path.Combine(Config["Workdir"], extFile));
 
         var pfxFile = await _ssl.BundleSelfSignedCert(request.Dto.Name, keyFile, crtFile, request.Dto.Password);
-        
-         
+
         // object with request.dto.DnsNames and request.dto.IpAddresses
         var altNames = JsonSerializer.Serialize(new AltNames()
         {
@@ -70,19 +69,6 @@ public class CreateTrustedCertCommandHandler : CertmanHandler<CreateTrustedCertC
             IpAddresses = request.Dto.IpAddresses ?? Array.Empty<string>()
         });
 
-        var dbParameters = new
-        {
-            CaCertId = request.Id,
-            Name = request.Dto.Name,
-            altNames,
-            keyFile,
-            csrFile,
-            extFile,
-            pfxFile,
-            request.Dto.Password,
-            CreatedAt = DateTime.Now
-        };
-        
         // insert cert into db
         await using var connection = await GetOpenConnection();
         var insertCommand = connection.CreateCommand();
@@ -100,36 +86,41 @@ public class CreateTrustedCertCommandHandler : CertmanHandler<CreateTrustedCertC
         insertCommand.Parameters.AddWithValue("@CreatedAt", DateTime.Now);
         var id = Convert.ToInt32(await insertCommand.ExecuteScalarAsync(ctoken));
         await connection.CloseAsync();
+
+        MoveFromWorkdirToStore(keyFile);
+        MoveFromWorkdirToStore(csrFile);
+        MoveFromWorkdirToStore(extFile);
+        MoveFromWorkdirToStore(pfxFile);
+        
+        //cleanup workdir
+        await _mediator.Send(new ClearWorkdirCommand(), ctoken);
         
         return (await _mediator.Send(new GetTrustedCertQuery(id), ctoken))!;
-    }
-    
-    private string CopyPemfileToWorkdir(CACert cert)
-    {
-        var pemFileCA = Path.Combine(Config["Workdir"], cert.Pemfile);
-        System.IO.File.Copy(
-            Path.Combine(Config["Store"], cert.Pemfile).ThrowIfFileNotExists(),
-            pemFileCA);
-        return pemFileCA;
-    }
-
-    private string CopyKeyfileToWorkdir(CACert cert)
-    {
-        var keyfileCA = Path.Combine(Config["Workdir"], cert.Keyfile);
-        System.IO.File.Copy(
-            Path.Combine(Config["Store"], cert.Keyfile).ThrowIfFileNotExists(),
-            keyfileCA);
-        return keyfileCA;
     }
 
     private async Task ThrowIfCertWithNameAlreadyExists(string name)
     {
-        var connection = await GetOpenConnection();
+        await using var connection = await GetOpenConnection();
         var count = await connection.ExecuteScalarAsync<int>(
             "SELECT COUNT(*) FROM Certs WHERE Name = @name", 
             new { name });
         
         if (count > 0)
             throw new Exception($"Cert with name {name} already exists");
+    }
+    
+    private void MoveFromWorkdirToStore(string file)
+    {
+        var source = Path.Combine(Config["Workdir"], file).ThrowIfFileNotExists();
+        var dest = Path.Combine(Config["Store"], file).ThrowIfFileExists();
+        File.Move(source, dest);
+    }
+
+    private string CopyFromStoreToWorkdir(string file)
+    {
+        var source = Path.Combine(Config["Store"], file).ThrowIfFileNotExists();
+        var dest = Path.Combine(Config["Workdir"], file).ThrowIfFileExists();
+        File.Copy(source, dest);
+        return dest;
     }
 }

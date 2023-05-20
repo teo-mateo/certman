@@ -31,7 +31,6 @@
       </None>
     </ItemGroup>
     <ItemGroup>
-      <Folder Include="Dtos\" />
       <Folder Include="Routes\" />
     </ItemGroup>
 </Project>

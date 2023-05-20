@@ -1,9 +1,11 @@
 ﻿using certman.Controllers.Dto;
 using certman.CQRS.Queries;
+using certman.Extensions;
 using certman.Models;
 using certman.Services;
 using Dapper;
 using MediatR;
+using Microsoft.Data.Sqlite;
 
 namespace certman.CQRS.Commands;
 
@@ -25,12 +27,7 @@ public class CreateCACertCommandHandler : CertmanHandler<CreateCACertCommand, CA
         await using var connection = await GetOpenConnection();
         
         //return if cert already exists, checking the db by name
-        var cert = await connection.QueryFirstOrDefaultAsync<CACert>("SELECT * FROM CACerts WHERE Name = @name", new {name = request.Dto.Name});
-        if (cert != null)
-        {
-            await connection.CloseAsync();
-            throw new Exception("CA Cert with that name already exists");
-        }
+        await ThrowIfCertWithNameAlreadyExists(request, connection);
 
         // create the private key file with the OpenSSL class
         var keyfile = await _ssl.CreatePrivateKey(request.Dto.Name);
@@ -51,14 +48,27 @@ public class CreateCACertCommandHandler : CertmanHandler<CreateCACertCommand, CA
         await connection.CloseAsync();
 
         // move files from workdir to store
-        var keyFile = Path.Combine(Config["Workdir"], keyfile);
-        var keyFileDest = Path.Combine(Config["Store"], keyfile);
-        File.Move(keyFile, keyFileDest);
-            
-        var pemFile = Path.Combine(Config["Workdir"], pemfile);
-        var pemFileDest = Path.Combine(Config["Store"], pemfile);
-        File.Move(pemFile, pemFileDest);
+        MoveFromWorkdirToStore(keyfile);
+        MoveFromWorkdirToStore(pemfile);
 
         return (await _mediator.Send(new GetCACertQuery(Convert.ToInt32(id)), ctoken))!;
+    }
+
+    private void MoveFromWorkdirToStore(string file)
+    {
+        var source = Path.Combine(Config["Workdir"], file).ThrowIfFileNotExists();
+        var dest = Path.Combine(Config["Store"], file).ThrowIfFileExists();
+        File.Move(source, dest);
+    }
+
+    private static async Task ThrowIfCertWithNameAlreadyExists(CreateCACertCommand request, SqliteConnection connection)
+    {
+        var cert = await connection.QueryFirstOrDefaultAsync<CACert>("SELECT * FROM CACerts WHERE Name = @name",
+            new { name = request.Dto.Name });
+        if (cert != null)
+        {
+            await connection.CloseAsync();
+            throw new Exception("CA Cert with that name already exists");
+        }
     }
 }
