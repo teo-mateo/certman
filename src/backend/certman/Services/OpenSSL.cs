@@ -30,7 +30,7 @@ public class OpenSSL: IOpenSSL
 
         var outputKeyFile = Path.Combine(_workdir, $"{name}.key").ThrowIfFileExists();
 
-        await RunCommand($"genrsa -out \"{outputKeyFile}\" 2048");
+        await RunOpenSSLCommand("genrsa", "-out", outputKeyFile, "2048");
         
         // return the output file
         return $"{name}.key";
@@ -48,7 +48,7 @@ public class OpenSSL: IOpenSSL
         
         var outputPemFile = Path.Combine(_workdir, $"{name}.pem").ThrowIfFileExists();
 
-        await RunCommand($"req -new -x509 -key \"{inputKeyFile}\" -out \"{outputPemFile}\" -days 3650 -subj /CN=\"{name}\"");
+        await RunOpenSSLCommand("req", "-new", "-x509", "-key", inputKeyFile, "-out", outputPemFile, "-days", "3650", "-subj", $"/CN=\"{name}\"");
         
         // return the output file
         return $"{name}.pem";
@@ -83,8 +83,8 @@ public class OpenSSL: IOpenSSL
         var outputKeyFile = Path.Combine(_workdir, $"{name}.key").ThrowIfFileExists();
         var outputCsrFile = Path.Combine(_workdir, $"{name}.csr").ThrowIfFileExists();
 
-        await RunCommand(
-            $"req -new -newkey rsa:2048 -nodes -keyout \"{outputKeyFile}\" -out \"{outputCsrFile}\" -config \"{inputCnfFile}\"");
+        await RunOpenSSLCommand(
+            "req", "-new", "-newkey", "rsa:2048", "-nodes", "-keyout", outputKeyFile, "-out", outputCsrFile, "-config", inputCnfFile);
 
         return (
             keyFile: $"{name}.key", 
@@ -126,7 +126,8 @@ public class OpenSSL: IOpenSSL
         var inputCsrFile = Path.Combine(_workdir, csrFile).ThrowIfFileNotExists();
         var inputExtFile = Path.Combine(_workdir, extFile).ThrowIfFileNotExists();
         var outputCrtFile = Path.Combine(_workdir, $"{name}.crt").ThrowIfFileExists();
-        await RunCommand($"x509 -req -in \"{inputCsrFile}\" -CA \"{inputPemFileCA}\" -CAkey \"{inputKeyFileCA}\" -CAcreateserial -out \"{outputCrtFile}\" -days 365 -sha256 -extfile \"{inputExtFile}\"");
+        await RunOpenSSLCommand(
+            "x509", "-req", "-in", inputCsrFile, "-CA", inputPemFileCA, "-CAkey", inputKeyFileCA, "-CAcreateserial", "-out", outputCrtFile, "-days", "365", "-sha256", "-extfile", inputExtFile);
         return $"{name}.crt";
     }
 
@@ -137,23 +138,28 @@ public class OpenSSL: IOpenSSL
         var inputKeyFile = Path.Combine(_workdir, keyFile).ThrowIfFileNotExists();
         var inputCrtFile = Path.Combine(_workdir, crtFile).ThrowIfFileNotExists();
         var outputPfxFile = Path.Combine(_workdir, $"{name}.pfx").ThrowIfFileExists();
-        await RunCommand(
-            $"pkcs12 -export -out \"{outputPfxFile}\" -inkey \"{inputKeyFile}\" -in \"{inputCrtFile}\" -passout pass:{password}");
+        await RunOpenSSLCommand(
+            "pkcs12", "-export", "-out", outputPfxFile, "-inkey", inputKeyFile, "-in", inputCrtFile, "-passout", $"pass:{password}");
         return $"{name}.pfx";
     }
 
-    private async Task RunCommand(string arguments)
+    [Obsolete]
+    private async Task RunOpenSSLCommand(string arguments)
     {
-        _logger.LogInformation("[OPENSSL] {Arguments}", arguments);
-        
-        // create the openssl command to create a PEM file
-        var startInfo = new ProcessStartInfo(_opensslExecutable, arguments)
-        {
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            UseShellExecute = false
-        };
+        var startInfo = CreateStartInfo(arguments);
+        await RunOpenSSLCommand(startInfo);
+    }
 
+    private async Task RunOpenSSLCommand(params string[] arguments)
+    {
+        var startInfo = CreateStartInfo(arguments);
+        await RunOpenSSLCommand(startInfo);
+    }
+
+    private async Task RunOpenSSLCommand(ProcessStartInfo startInfo)
+    {
+        _logger.LogInformation("[OPENSSL] {Arguments}", startInfo.ArgumentList.Aggregate((a, b) => $"{a} {b}"));
+        
         // run the openssl command
         var process = new Process()
         {
@@ -169,9 +175,37 @@ public class OpenSSL: IOpenSSL
         _logger.LogError("[OPENSSL] {Error}", error);
         
         await process.WaitForExitAsync();
-        process.ThrowIfBadExit(error);
+        process.ThrowIfBadExit(error);        
     }
-    
+
+    private ProcessStartInfo CreateStartInfo(string arguments)
+    {
+        return new ProcessStartInfo(_opensslExecutable, arguments)
+        {
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false
+        };
+    }
+
+    private ProcessStartInfo CreateStartInfo(IEnumerable<string> arguments)
+    {
+        var processStartInfo = new ProcessStartInfo(_opensslExecutable)
+        {
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false
+        };
+
+        foreach (var argument in arguments)
+        {
+            processStartInfo.ArgumentList.Add(argument);
+        }
+
+        return processStartInfo;
+    }
+
+
     private const string CnfTemplate = @"[req]
 distinguished_name = req_distinguished_name
 prompt = no

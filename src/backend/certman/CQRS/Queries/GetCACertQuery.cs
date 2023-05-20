@@ -1,9 +1,7 @@
 ﻿using System.Text.Json;
-using System.Text.Json.Serialization;
 using certman.Models;
 using Dapper;
 using MediatR;
-using Microsoft.AspNetCore.Mvc.TagHelpers;
 
 namespace certman.CQRS.Queries;
 

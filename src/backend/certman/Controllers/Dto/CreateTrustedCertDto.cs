@@ -14,5 +14,6 @@ public record CreateTrustedCertDto(
     string[] DnsNames,
     string[]? IpAddresses,
     [Required]
+    [RegularExpression(@"^[^&()^|""<>\\% ]*$", ErrorMessage = "Special characters not allowed in the password. Use only characters that won't need escaping. (lazy developer).")]
     string Password
 );

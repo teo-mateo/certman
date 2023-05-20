@@ -7,8 +7,12 @@ namespace certman.Controllers;
 public class ServerController : ControllerBase
 {
     [HttpGet("version")]
-    public string GetServerVersion()
+    public IActionResult GetServerVersion()
     {
-        return "1.0";
+        return new JsonResult( 
+            new
+            {
+                version= "1.0"
+            });
     }
 }

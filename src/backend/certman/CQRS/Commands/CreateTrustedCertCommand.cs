@@ -69,28 +69,38 @@ public class CreateTrustedCertCommandHandler : CertmanHandler<CreateTrustedCertC
             DnsNames = request.Dto.DnsNames ?? Array.Empty<string>(),
             IpAddresses = request.Dto.IpAddresses ?? Array.Empty<string>()
         });
+
+        var dbParameters = new
+        {
+            CaCertId = request.Id,
+            Name = request.Dto.Name,
+            altNames,
+            keyFile,
+            csrFile,
+            extFile,
+            pfxFile,
+            request.Dto.Password,
+            CreatedAt = DateTime.Now
+        };
         
         // insert cert into db
         await using var connection = await GetOpenConnection();
-        var id = await connection.ExecuteScalarAsync<int>(
-            @"INSERT INTO Certs (caCertId, Name, altNames, keyfile, csrfile, extfile, pfxfile, password, createdAt) 
+        var insertCommand = connection.CreateCommand();
+        insertCommand.CommandText = @"INSERT INTO Certs (caCertId, Name, altNames, keyfile, csrfile, extfile, pfxfile, password, createdAt) 
                  VALUES (@CaCertId, @Name, @altNames, @keyfile, @csrfile, @extfile, @pfxfile, @Password, @CreatedAt); 
-                 SELECT last_insert_rowid();",
-            new
-            {
-                CACertId = request.Id,
-                Name = request.Dto.Name,
-                altNames,
-                keyFile,
-                csrFile,
-                extFile,
-                pfxFile,
-                request.Dto.Password,
-                CreatedAt = DateTime.Now
-            });
-
+                 SELECT last_insert_rowid();";
+        insertCommand.Parameters.AddWithValue("@CaCertId", request.Id);
+        insertCommand.Parameters.AddWithValue("@Name", request.Dto.Name);
+        insertCommand.Parameters.AddWithValue("@altNames", altNames);
+        insertCommand.Parameters.AddWithValue("@keyfile", keyFile);
+        insertCommand.Parameters.AddWithValue("@csrfile", csrFile);
+        insertCommand.Parameters.AddWithValue("@extfile", extFile);
+        insertCommand.Parameters.AddWithValue("@pfxfile", pfxFile);
+        insertCommand.Parameters.AddWithValue("@Password", request.Dto.Password);
+        insertCommand.Parameters.AddWithValue("@CreatedAt", DateTime.Now);
+        var id = Convert.ToInt32(await insertCommand.ExecuteScalarAsync(ctoken));
         await connection.CloseAsync();
-
+        
         return (await _mediator.Send(new GetTrustedCertQuery(id), ctoken))!;
     }
     
