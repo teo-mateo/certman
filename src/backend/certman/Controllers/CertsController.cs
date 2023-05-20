@@ -138,6 +138,16 @@ public class CertsController : CertmanController
     }
 
     /// <summary>
+    /// Deletes a trusted cert and all its files
+    /// </summary>
+    [HttpDelete("ca-certs/{caCertId}/certs/{id}")]
+    public async Task<IActionResult> GetTrustedCert(int caCertId, int id)
+    {
+        await _mediator.Send(new DeleteTrustedCertCommand(id));
+        return Ok();
+    }
+
+    /// <summary>
     /// Verifies if the key and pem files exist, if not, deletes the cert from the db
     /// </summary>
     private async Task PruneCACert(CACert cert)
