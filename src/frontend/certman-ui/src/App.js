@@ -15,7 +15,7 @@ const App = () => {
                         <LeftNavigation />
                         <div className="column">
                             <Routes>
-                                <Route path="/certificates" element={<CertificatesPage />} />
+                                <Route path="/certificates/*" element={<CertificatesPage />} />
                                 <Route path="/settings" element={<SettingsPage />} />
                             </Routes>
                         </div>

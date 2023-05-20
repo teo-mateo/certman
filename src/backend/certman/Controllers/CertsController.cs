@@ -64,7 +64,9 @@ public class CertsController : CertmanController
         return Ok(certs);
     }
 
-    // get single ca cert
+    /// <summary>
+    /// Gets a CA Cert by Id
+    /// </summary>
     [HttpGet("ca-certs/{id}")]
     public async Task<IActionResult> GetCACert(int id)
     {
@@ -147,6 +149,16 @@ public class CertsController : CertmanController
         return Ok();
     }
 
+    /// <summary>
+    /// Deletes a CA Cert including all linked certs
+    /// </summary>
+    [HttpDelete("ca-certs/{id}")]
+    public async Task<IActionResult> DeleteCACert(int id)
+    {
+        await _mediator.Send(new DeleteCACertCommand(id));
+        return Ok();
+    }
+    
     /// <summary>
     /// Verifies if the key and pem files exist, if not, deletes the cert from the db
     /// </summary>

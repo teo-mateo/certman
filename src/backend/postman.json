@@ -1,0 +1,212 @@
+{
+	"info": {
+		"_postman_id": "102fae35-53c8-45e0-9746-a165f1c064ed",
+		"name": "Certman",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "9039558"
+	},
+	"item": [
+		{
+			"name": "Get CA Certs",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {\r",
+							"    pm.response.to.have.status(200);\r",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{certmanBaseUrl}}/api/certs/ca-certs",
+					"host": [
+						"{{certmanBaseUrl}}"
+					],
+					"path": [
+						"api",
+						"certs",
+						"ca-certs"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Create new CA Cert",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"function generateRandomName() {\r",
+							"    var names = [\"John\", \"Emma\", \"Liam\", \"Olivia\", \"Noah\", \"Ava\", \"Ethan\", \"Isabella\", \"Lucas\", \"Sophia\"];\r",
+							"    return names[Math.floor(Math.random() * names.length)];\r",
+							"}\r",
+							"\r",
+							"var randomInt = Math.floor(Math.random() * 1000);\r",
+							"\r",
+							"pm.globals.set(\"randomName\", generateRandomName() + randomInt);\r",
+							""
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {\r",
+							"    pm.response.to.have.status(200);\r",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"name\": \"{{$randomAdjective}}{{$randomNoun}}\"\r\n}"
+				},
+				"url": {
+					"raw": "{{certmanBaseUrl}}/api/certs/ca-certs",
+					"host": [
+						"{{certmanBaseUrl}}"
+					],
+					"path": [
+						"api",
+						"certs",
+						"ca-certs"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Prune All Certs",
+			"request": {
+				"method": "GET",
+				"header": []
+			},
+			"response": []
+		},
+		{
+			"name": "Get Single CA Cert",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {\r",
+							"    pm.response.to.have.status(200);\r",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": []
+			},
+			"response": []
+		},
+		{
+			"name": "Download CA Cert keyfile",
+			"request": {
+				"method": "GET",
+				"header": []
+			},
+			"response": []
+		},
+		{
+			"name": "Download CA Cert Pem file",
+			"request": {
+				"method": "GET",
+				"header": []
+			},
+			"response": []
+		},
+		{
+			"name": "Create Trusted Certificate signed by a CA Cert",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"Name\": \"{{$randomAdjective}}{{$randomNoun}}\",\r\n    \"Password\": \"{{$randomAdjective}}{{$randomNoun}}-pwd\",\r\n    \"Country\":\"BE\",\r\n    \"State\":\"Flanders\",\r\n    \"Locality\": \"Tienen\",\r\n    \"Organization\": \"Heapzilla\",\r\n    \"OrganizationUnit\": \"Heapzilla Office\",\r\n    \"CommonName\": \"Berlioz\",\r\n    \"DnsNames\": [\"berlioz.local\"]\r\n}"
+				},
+				"url": {
+					"raw": "{{certmanBaseUrl}}/api/certs/ca-certs/1/certs",
+					"host": [
+						"{{certmanBaseUrl}}"
+					],
+					"path": [
+						"api",
+						"certs",
+						"ca-certs",
+						"1",
+						"certs"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Delete Trusted Certificate",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {\r",
+							"    pm.response.to.have.status(200);\r",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "DELETE",
+				"header": [],
+				"url": {
+					"raw": "{{certmanBaseUrl}}/api/certs/ca-certs/13/certs/40",
+					"host": [
+						"{{certmanBaseUrl}}"
+					],
+					"path": [
+						"api",
+						"certs",
+						"ca-certs",
+						"13",
+						"certs",
+						"40"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}

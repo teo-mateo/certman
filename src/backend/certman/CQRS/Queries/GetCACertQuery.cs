@@ -5,6 +5,10 @@ using MediatR;
 
 namespace certman.CQRS.Queries;
 
+/// <summary>
+/// Returns a CA Cert and all its signed certificates
+/// </summary>
+/// <param name="Id"></param>
 public record GetCACertQuery(int Id) : IRequest<CACert?>;
 
 public class GetCACertQueryHandler : CertmanHandler<GetCACertQuery, CACert?>

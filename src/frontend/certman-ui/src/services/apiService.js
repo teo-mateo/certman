@@ -53,12 +53,31 @@ const createCACert = async (payload) => {
     return data;
 };
 
+const getCACertDetails = async (id) => {
+    const response = await fetch(`${BASE_URL}/api/certs/ca-certs/${id}`);
+    if (!response.ok) {
+        throw new Error(`Error fetching CA Cert details with id ${id}`);
+    }
+    const data = await response.json();
+    return data;
+};
+
+const deleteCert = async (caCertId, certId) => {
+    const response = await fetch(`${BASE_URL}/api/certs/ca-certs/${caCertId}/certs/${certId}`, { method: 'DELETE' });
+    if (!response.ok) {
+        throw new Error(`Error deleting Cert with id ${certId}`);
+    }
+    return;
+};
+
 const apiService = {
     getVersion,
     getCACerts,
     getKeyfile,
     getPemfile,
-    createCACert
+    createCACert,
+    getCACertDetails,
+    deleteCert,
 };
 
 export default apiService;

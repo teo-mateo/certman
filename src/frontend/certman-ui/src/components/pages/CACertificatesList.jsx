@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import apiService from './../../services/apiService';
 import CreateCertModal from "./CreateCertModal";
+import {Link} from "react-router-dom";
 
 const CACertificatesList = () => {
 
@@ -44,9 +45,7 @@ const CACertificatesList = () => {
     return (
         <div>
             <h2 className="subtitle">CA Certificates</h2>
-            <p>
-                <CreateCertModal onCertCreated={handleCertCreated}/>
-            </p><br/>
+                <CreateCertModal onCertCreated={handleCertCreated}/><br/>
             <table style={tableStyle}>
                 <thead>
                 <tr>
@@ -60,7 +59,9 @@ const CACertificatesList = () => {
                 <tbody>
                 {caCerts.map(cert => (
                     <tr key={cert.id}>
-                        <td style={thTdStyle}>{cert.id}</td>
+                        <td style={thTdStyle}>
+                            <Link to={`/certificates/${cert.id}`}>{cert.id}</Link>
+                        </td>
                         <td style={thTdStyle}>{cert.name}</td>
                         <td style={thTdStyle}>
                             <button onClick={() => downloadFile(cert.id, cert.keyfile, apiService.getKeyfile)}>
