@@ -1,7 +1,7 @@
 import React from 'react';
-import CACertificatesList from "./CACertificatesList";
+import CACertificatesList from "./list/CACertificatesList";
 import {Routes, Route} from "react-router-dom";
-import CACertificateDetails from "./CACertificateDetails";
+import CACertificateDetails from "./details/CACertificateDetails";
 
 const CertificatesPage = () => {
     return (

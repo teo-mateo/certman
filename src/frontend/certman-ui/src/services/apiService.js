@@ -70,6 +70,29 @@ const deleteCert = async (caCertId, certId) => {
     return;
 };
 
+const deleteCACert = async (id) => {
+    const response = await fetch(`${BASE_URL}/api/certs/ca-certs/${id}`, { method: 'DELETE' });
+    if (!response.ok) {
+        throw new Error(`Error deleting CA Cert with id ${id}`);
+    }
+    return;
+}
+
+const createLeafCert = async (caCertId, payload) => {
+    const response = await fetch(`${BASE_URL}/api/certs/ca-certs/${caCertId}/certs`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+    });
+    if (!response.ok) {
+        throw new Error('Error creating leaf certificate');
+    }
+    const data = await response.json();
+    return data;
+};
+
 const apiService = {
     getVersion,
     getCACerts,
@@ -77,7 +100,9 @@ const apiService = {
     getPemfile,
     createCACert,
     getCACertDetails,
+    deleteCACert,
     deleteCert,
+    createLeafCert
 };
 
 export default apiService;
