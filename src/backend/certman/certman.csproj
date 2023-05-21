@@ -29,6 +29,10 @@
       <None Update="certman.sqlite">
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       </None>
+      <Content Remove="appsettings.dockerlinux.json" />
+      <None Include="appsettings.dockerlinux.json">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
     </ItemGroup>
     <ItemGroup>
       <Folder Include="Routes\" />

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-function DnsNamesInput({ onDnsNamesChange }) {
+function DnsNamesInput({ onDnsNamesChange, isInvalid }) {
     const [dnsNames, setDnsNames] = useState([]);
     const [currentName, setCurrentName] = useState('');
 
@@ -30,27 +30,26 @@ function DnsNamesInput({ onDnsNamesChange }) {
                 <div className="control" key={name}>
                     <div className="tags has-addons">
                         <span className="tag">{name}</span>
-                        <a className="tag is-delete" onClick={() => handleRemove(name)}></a>
+                        <a className="tag is-delete" onClick={() => handleRemove(name)} href="#"></a>
                     </div>
                 </div>
             ))}
             <div className="field has-addons">
                 <div className="control">
                     <input
-                        className="input is-small"
+                        className={`input is-small ${isInvalid ? "is-danger" : ""}`}
                         type="text"
                         value={currentName}
                         onChange={handleInputChange}
                         placeholder="New DNS name"
+                        maxLength="200"
                     />
                 </div>
                 <div className="control">
                     <button
                         className="button is-info is-small"
                         type="button"
-                        onClick={handleAdd}
-                    >
-                        Add DNS Name
+                        onClick={handleAdd}> Add DNS Name
                     </button>
                 </div>
             </div>

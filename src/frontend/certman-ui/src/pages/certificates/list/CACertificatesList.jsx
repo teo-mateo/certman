@@ -35,8 +35,9 @@ const CACertificatesList = () => {
 
     return (
         <div>
-            <h2 className="subtitle">Root Certificates</h2>
             <h4 className="subtitle is-6">Manage and oversee your Root Certificates with simplicity and ease</h4>
+            <h2 className="subtitle">Root Certificates</h2>
+
             <CreateCACertModal onCertCreated={handleCertCreated}/><br/>
             <table className="table is-bordered is-striped is-narrow is-hoverable is-fullwidth">
                 <thead>

@@ -90,12 +90,8 @@ public class CertsController : CertmanController
             return NotFound();
         }
         
-        var keyFile = Path.Combine(Config["Store"], cert.Keyfile);
-        if (!System.IO.File.Exists(keyFile))
-        {
-            return NotFound();
-        }
-        
+        var keyFile = Path.Combine(Config["Store"], cert.Keyfile).ThrowIfFileNotExists();
+
         var stream = System.IO.File.OpenRead(keyFile);
         return File(stream, "application/octet-stream", cert.Keyfile);
     }
@@ -112,14 +108,38 @@ public class CertsController : CertmanController
             return NotFound();
         }
         
-        var pemFile = Path.Combine(Config["Store"], cert.Pemfile);
-        if (!System.IO.File.Exists(pemFile))
+        var pemFile = Path.Combine(Config["Store"], cert.Pemfile).ThrowIfFileNotExists();
+        var stream = System.IO.File.OpenRead(pemFile);
+        return File(stream, "application/octet-stream", cert.Pemfile);
+    }
+
+    [HttpGet("ca-certs/{caCertId}/certs/{id}/pfxfile")]
+    public async Task<IActionResult> DownloadCertPfxFile(int caCertId, int id)
+    {
+        var cert = await _mediator.Send(new GetTrustedCertQuery(id));
+        if (cert == null)
         {
             return NotFound();
         }
-        
-        var stream = System.IO.File.OpenRead(pemFile);
-        return File(stream, "application/octet-stream", cert.Pemfile);
+
+        var pfxFile = Path.Combine(Config["Store"], cert.Pfxfile);
+        var stream = System.IO.File.OpenRead(pfxFile);
+        return File(stream, "application/octet-stream", cert.Pfxfile);
+    }
+    
+    // get the key file of a trusted cert
+    [HttpGet("ca-certs/{caCertId}/certs/{id}/keyfile")]
+    public async Task<IActionResult> DownloadCertKeyFile(int caCertId, int id)
+    {
+        var cert = await _mediator.Send(new GetTrustedCertQuery(id));
+        if (cert == null)
+        {
+            return NotFound();
+        }
+
+        var keyFile = Path.Combine(Config["Store"], cert.Keyfile);
+        var stream = System.IO.File.OpenRead(keyFile);
+        return File(stream, "application/octet-stream", cert.Keyfile);
     }
     
     /// <summary>

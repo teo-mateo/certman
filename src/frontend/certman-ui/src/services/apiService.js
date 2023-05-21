@@ -1,4 +1,4 @@
-const BASE_URL = "https://localhost:7295";
+const BASE_URL = "http://localhost:5050";
 
 const getVersion = async () => {
     const response = await fetch(`${BASE_URL}/server/version`);
@@ -18,23 +18,42 @@ const getCACerts = async () => {
     return data;
 };
 
-const getKeyfile = async (id) => {
-    const response = await fetch(`${BASE_URL}/api/certs/ca-certs/${id}/keyfile`);
+const getKeyfile = async (caCertId) => {
+    const response = await fetch(`${BASE_URL}/api/certs/ca-certs/${caCertId}/keyfile`);
     if (!response.ok) {
-        throw new Error(`Error fetching keyfile for cert ID: ${id}`);
+        throw new Error(`Error fetching keyfile for cert ID: ${caCertId}`);
     }
     const data = await response.blob();
     return data;
 };
 
-const getPemfile = async (id) => {
-    const response = await fetch(`${BASE_URL}/api/certs/ca-certs/${id}/pemfile`);
+const getPemfile = async (caCertId) => {
+    const response = await fetch(`${BASE_URL}/api/certs/ca-certs/${caCertId}/pemfile`);
     if (!response.ok) {
-        throw new Error(`Error fetching pemfile for cert ID: ${id}`);
+        throw new Error(`Error fetching pemfile for cert ID: ${caCertId}`);
     }
     const data = await response.blob();
     return data;
 };
+
+const downloadTrustedCertPfxFile = async (caCertId, id) => {
+    const response = await fetch(`${BASE_URL}/api/certs/ca-certs/${caCertId}/certs/${id}/pfxfile`);
+    if (!response.ok) {
+        throw new Error(`Error fetching pfxfile for cert ID: ${id}`);
+    }
+    const data = await response.blob();
+    return data;
+}
+
+// getTrustedCertKeyfile
+const downloadTrustedCertKeyFile = async (caCertId, id) => {
+    const response = await fetch(`${BASE_URL}/api/certs/ca-certs/${caCertId}/certs/${id}/keyfile`);
+    if (!response.ok) {
+        throw new Error(`Error fetching keyfile for cert ID: ${id}`);
+    }
+    const data = await response.blob();
+    return data;
+}
 
 const createCACert = async (payload) => {
     const response = await fetch(`${BASE_URL}/api/certs/ca-certs`, {
@@ -98,6 +117,8 @@ const apiService = {
     getCACerts,
     getKeyfile,
     getPemfile,
+    downloadTrustedCertPfxFile,
+    downloadTrustedCertKeyFile,
     createCACert,
     getCACertDetails,
     deleteCACert,
