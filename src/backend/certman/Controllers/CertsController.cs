@@ -1,9 +1,10 @@
 ﻿using certman.Controllers.Dto;
 using certman.CQRS.Commands;
+using certman.CQRS.Commands.CACerts;
+using certman.CQRS.Commands.Certs;
 using certman.CQRS.Queries;
 using certman.Extensions;
 using certman.Models;
-using certman.Services;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
@@ -12,14 +13,12 @@ namespace certman.Controllers;
 [Route("api/[controller]")]
 public class CertsController : CertmanController
 {
-    private readonly IOpenSSL _ssl;
     private readonly ILogger<CertsController> _logger;
     private readonly IMediator _mediator;
-
+    
     //ctor
-    public CertsController(IOpenSSL ssl, IConfiguration config, ILogger<CertsController> logger, IMediator mediator): base(config)
+    public CertsController(IConfiguration config, ILogger<CertsController> logger, IMediator mediator): base(config)
     {
-        _ssl = ssl;
         _logger = logger;
         _mediator = mediator;
     }
@@ -30,6 +29,8 @@ public class CertsController : CertmanController
     [HttpPost("ca-certs")]
     public async Task<JsonResult> CreateCACert([FromBody] CreateCACertDto dto)
     {
+        _logger.LogInformation("Creating CA Cert: {DtoName}", dto.Name);
+        
         if (!ModelState.IsValid)
         {
             // return error and all ModelState errors
@@ -46,11 +47,9 @@ public class CertsController : CertmanController
     [HttpDelete("ca-certs/prune")]
     public async Task<IActionResult> PruneCACerts()
     {
-        var certs = await _mediator.Send(new GetAllCACertsQuery());
-        foreach (var cert in certs)
-        {
-            await PruneCACert(cert);
-        }
+        _logger.LogInformation("Pruning CA Certs");
+        
+        await _mediator.Send(new PruneCACertsCommand());
         return Ok();
     }
     
@@ -60,6 +59,8 @@ public class CertsController : CertmanController
     [HttpGet("ca-certs")]
     public async Task<IActionResult> GetAllCACerts()
     {
+        _logger.LogInformation("Getting all CA Certs");
+        
         var certs = await _mediator.Send(new GetAllCACertsQuery());
         return Ok(certs);
     }
@@ -70,6 +71,8 @@ public class CertsController : CertmanController
     [HttpGet("ca-certs/{id}")]
     public async Task<IActionResult> GetCACert(int id)
     {
+        _logger.LogInformation("Getting CA Cert: {Id}", id);
+        
         var caCert = await _mediator.Send(new GetCACertQuery(id));
         if (caCert == null)
             return NotFound();
@@ -84,6 +87,8 @@ public class CertsController : CertmanController
     [HttpGet("ca-certs/{id}/keyfile")]
     public async Task<IActionResult> DownloadCACertKeyfile(int id)
     {
+        _logger.LogInformation("Downloading CA Cert Keyfile: {Id}", id);
+        
         var cert = await _mediator.Send(new GetCACertQuery(id));
         if (cert == null)
         {
@@ -102,6 +107,8 @@ public class CertsController : CertmanController
     [HttpGet("ca-certs/{id}/pemfile")]
     public async Task<IActionResult> DownloadCACertPemfile(int id)
     {
+        _logger.LogInformation("Downloading CA Cert Pemfile: {Id}", id);
+        
         var cert = await _mediator.Send(new GetCACertQuery(id));
         if (cert == null)
         {
@@ -113,17 +120,19 @@ public class CertsController : CertmanController
         return File(stream, "application/octet-stream", cert.Pemfile);
     }
 
-    [HttpGet("ca-certs/{caCertId}/certs/{id}/pfxfile")]
+    [HttpGet("ca-certs/{caCertId}/certs/{id:int}/pfxfile")]
     public async Task<IActionResult> DownloadCertPfxFile(int caCertId, int id)
     {
-        var cert = await _mediator.Send(new GetTrustedCertQuery(id));
+        _logger.LogInformation("Downloading Cert Pfxfile: {Id}", id);
+        
+        var cert = await _mediator.Send(new GetTrustedCertQuery(caCertId, id));
         if (cert == null)
         {
             return NotFound();
         }
 
-        var pfxFile = Path.Combine(Config["Store"], cert.Pfxfile);
-        var stream = System.IO.File.OpenRead(pfxFile);
+        var pfxFile = Path.Combine(Config["Store"], cert.Pfxfile).ThrowIfFileNotExists();
+        await using var stream = System.IO.File.OpenRead(pfxFile);
         return File(stream, "application/octet-stream", cert.Pfxfile);
     }
     
@@ -131,14 +140,16 @@ public class CertsController : CertmanController
     [HttpGet("ca-certs/{caCertId}/certs/{id}/keyfile")]
     public async Task<IActionResult> DownloadCertKeyFile(int caCertId, int id)
     {
-        var cert = await _mediator.Send(new GetTrustedCertQuery(id));
+        _logger.LogInformation("Downloading Cert Keyfile: {Id}", id);
+        
+        var cert = await _mediator.Send(new GetTrustedCertQuery(caCertId, id));
         if (cert == null)
         {
             return NotFound();
         }
 
         var keyFile = Path.Combine(Config["Store"], cert.Keyfile).ThrowIfFileNotExists();
-        var stream = System.IO.File.OpenRead(keyFile);
+        await using var stream = System.IO.File.OpenRead(keyFile);
         return File(stream, "application/octet-stream", cert.Keyfile);
     }
     
@@ -146,8 +157,10 @@ public class CertsController : CertmanController
     /// Creates a new trusted certificate, signed by the CA Cert
     /// </summary>
     [HttpPost("ca-certs/{id}/certs")]
-    public async Task<IActionResult> CreateTrustedCert(int id, [FromBody] CreateTrustedCertDto dto)
+    public async Task<IActionResult> CreateTrustedCert(int id, [FromBody] CreateLeafCertDto dto)
     {
+        _logger.LogInformation("Creating Trusted Cert: {DtoName}", dto.Name);
+        
         if (!ModelState.IsValid)
         {
             // return error and all ModelState errors
@@ -165,7 +178,9 @@ public class CertsController : CertmanController
     [HttpDelete("ca-certs/{caCertId}/certs/{id}")]
     public async Task<IActionResult> GetTrustedCert(int caCertId, int id)
     {
-        await _mediator.Send(new DeleteTrustedCertCommand(id));
+        _logger.LogInformation("Deleting Trusted Cert: {Id}", id);
+        
+        await _mediator.Send(new DeleteTrustedCertCommand(caCertId, id));
         return Ok();
     }
 
@@ -175,40 +190,11 @@ public class CertsController : CertmanController
     [HttpDelete("ca-certs/{id}")]
     public async Task<IActionResult> DeleteCACert(int id)
     {
+        _logger.LogInformation("Deleting CA Cert: {Id}", id);
+        
         await _mediator.Send(new DeleteCACertCommand(id));
         return Ok();
     }
     
-    /// <summary>
-    /// Verifies if the key and pem files exist, if not, deletes the cert from the db
-    /// </summary>
-    private async Task PruneCACert(CACert cert)
-    {
-        var keyFile = Path.Combine(Config["Store"], cert.Keyfile);
-        var pemFile = Path.Combine(Config["Store"], cert.Pemfile);
-        if (System.IO.File.Exists(keyFile) && System.IO.File.Exists(pemFile))
-        {
-            return;
-        }
-        
-        System.IO.File.Delete(keyFile);
-        System.IO.File.Delete(pemFile);
-        
-        await using var connection = await GetOpenConnection();
-        
-        // delete linked certs from db
-        await using var deleteLinkedCertsCommand = connection.CreateCommand();
-        deleteLinkedCertsCommand.CommandText = "DELETE FROM Certs WHERE CaCertId = @id";
-        deleteLinkedCertsCommand.Parameters.AddWithValue("@id", cert.Id);
-        await deleteLinkedCertsCommand.ExecuteNonQueryAsync();
-        
-        // delete CA cert from db
-        await using var deleteCommand = connection.CreateCommand();
-        deleteCommand.CommandText = "DELETE FROM CACerts WHERE Id = @id";
-        deleteCommand.Parameters.AddWithValue("@id", cert.Id);
-        await deleteCommand.ExecuteNonQueryAsync();
-        
-        // close connection
-        await connection.CloseAsync();
-    }
+
 }

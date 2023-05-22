@@ -2,9 +2,9 @@
 using Dapper;
 using MediatR;
 
-namespace certman.CQRS.Commands;
+namespace certman.CQRS.Commands.Certs;
 
-public record DeleteTrustedCertCommand(int Id) : IRequest<Unit>;
+public record DeleteTrustedCertCommand(int CaCertId, int Id) : IRequest<Unit>;
 
 public class DeleteTrustedCertCommandHandler : CertmanHandler<DeleteTrustedCertCommand, Unit>
 {
@@ -13,9 +13,10 @@ public class DeleteTrustedCertCommandHandler : CertmanHandler<DeleteTrustedCertC
     protected override async Task<Unit> ExecuteAsync(DeleteTrustedCertCommand request, CancellationToken ctoken)
     {
         await using var connection = await GetOpenConnection();
-        
-        // get the trusted cert
-        var cert = await connection.QueryFirstOrDefaultAsync<Cert>("SELECT * FROM Certs WHERE Id = @id", new {id=request.Id});
+
+        var cert = await connection.QueryFirstOrDefaultAsync<Cert>(
+            "SELECT * FROM Certs WHERE caCertId = @CaCertId AND id = @Id", 
+            new { request.CaCertId, request.Id });
         
         if (cert == null)
             return Unit.Value;
@@ -26,7 +27,7 @@ public class DeleteTrustedCertCommandHandler : CertmanHandler<DeleteTrustedCertC
         File.Delete(Path.Combine(Config["Store"], cert.Pfxfile));
         File.Delete(Path.Combine(Config["Store"], cert.Keyfile));
         
-        await connection.ExecuteAsync("DELETE FROM Certs WHERE Id = @id", new {id=request.Id});
+        await connection.ExecuteAsync("DELETE FROM Certs WHERE Id = @Id", new { request.Id });
         return Unit.Value;
     }
 }

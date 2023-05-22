@@ -1,5 +1,6 @@
 ﻿using System.Text.Json;
 using certman.Controllers.Dto;
+using certman.CQRS.Commands.Storage;
 using certman.CQRS.Queries;
 using certman.Extensions;
 using certman.Models;
@@ -7,9 +8,9 @@ using certman.Services;
 using Dapper;
 using MediatR;
 
-namespace certman.CQRS.Commands;
+namespace certman.CQRS.Commands.Certs;
 
-public record CreateTrustedCertCommand(int Id, CreateTrustedCertDto Dto) : IRequest<Cert>;
+public record CreateTrustedCertCommand(int CaCertId, CreateLeafCertDto Dto) : IRequest<Cert>;
 public class CreateTrustedCertCommandHandler : CertmanHandler<CreateTrustedCertCommand, Cert>
 {
     private readonly IMediator _mediator;
@@ -23,7 +24,7 @@ public class CreateTrustedCertCommandHandler : CertmanHandler<CreateTrustedCertC
 
     protected override async Task<Cert> ExecuteAsync(CreateTrustedCertCommand request, CancellationToken ctoken)
     {
-        var caCert = await _mediator.Send(new GetCACertQuery(request.Id), ctoken);
+        var caCert = await _mediator.Send(new GetCACertQuery(request.CaCertId), ctoken);
         if (caCert == null)
         {
             throw new Exception("CA Cert not found");
@@ -37,15 +38,17 @@ public class CreateTrustedCertCommandHandler : CertmanHandler<CreateTrustedCertC
         var keyFileCA = CopyFromStoreToWorkdir(caCert.Keyfile);
         var pemFileCA = CopyFromStoreToWorkdir(caCert.Pemfile);
 
-        var (keyFile, csrFile) = await _ssl.CreateKeyAndCsr(request.Dto.Name, new CsrInfo()
-        {
-            Country = request.Dto.Country ?? "",
-            State = request.Dto.State ?? "",
-            Locality = request.Dto.Locality ?? "",
-            Organization = request.Dto.Organization ?? "",
-            OrganizationUnit = request.Dto.OrganizationUnit ?? "",
-            CommonName = request.Dto.CommonName
-        });
+        var (keyFile, csrFile) = await _ssl.CreateKeyAndCsr(
+            request.Dto.Name,
+            new CsrInfo
+            {
+                Country = request.Dto.Country ?? "",
+                State = request.Dto.State ?? "",
+                Locality = request.Dto.Locality ?? "",
+                Organization = request.Dto.Organization ?? "",
+                OrganizationUnit = request.Dto.OrganizationUnit ?? "",
+                CommonName = request.Dto.CommonName
+            });
 
         var extFile = await _ssl.CreateExtFile(
             request.Dto.Name, 
@@ -63,11 +66,12 @@ public class CreateTrustedCertCommandHandler : CertmanHandler<CreateTrustedCertC
         var pfxFile = await _ssl.BundleSelfSignedCert(request.Dto.Name, keyFile, crtFile, request.Dto.Password);
 
         // object with request.dto.DnsNames and request.dto.IpAddresses
-        var altNames = JsonSerializer.Serialize(new AltNames()
-        {
-            DnsNames = request.Dto.DnsNames ?? Array.Empty<string>(),
-            IpAddresses = request.Dto.IpAddresses ?? Array.Empty<string>()
-        });
+        var altNames = JsonSerializer.Serialize(
+            new AltNames
+            {
+                DnsNames = request.Dto.DnsNames,
+                IpAddresses = request.Dto.IpAddresses ?? Array.Empty<string>()
+            });
 
         // insert cert into db
         await using var connection = await GetOpenConnection();
@@ -75,7 +79,7 @@ public class CreateTrustedCertCommandHandler : CertmanHandler<CreateTrustedCertC
         insertCommand.CommandText = @"INSERT INTO Certs (caCertId, Name, altNames, keyfile, csrfile, extfile, pfxfile, password, createdAt) 
                  VALUES (@CaCertId, @Name, @altNames, @keyfile, @csrfile, @extfile, @pfxfile, @Password, @CreatedAt); 
                  SELECT last_insert_rowid();";
-        insertCommand.Parameters.AddWithValue("@CaCertId", request.Id);
+        insertCommand.Parameters.AddWithValue("@CaCertId", request.CaCertId);
         insertCommand.Parameters.AddWithValue("@Name", request.Dto.Name);
         insertCommand.Parameters.AddWithValue("@altNames", altNames);
         insertCommand.Parameters.AddWithValue("@keyfile", keyFile);
@@ -95,7 +99,7 @@ public class CreateTrustedCertCommandHandler : CertmanHandler<CreateTrustedCertC
         //cleanup workdir
         await _mediator.Send(new ClearWorkdirCommand(), ctoken);
         
-        return (await _mediator.Send(new GetTrustedCertQuery(id), ctoken))!;
+        return (await _mediator.Send(new GetTrustedCertQuery(request.CaCertId, id), ctoken))!;
     }
 
     private async Task ThrowIfCertWithNameAlreadyExists(string name)

@@ -2,7 +2,7 @@
 
 namespace certman.Controllers.Dto;
 
-public record CreateTrustedCertDto(
+public record CreateLeafCertDto(
     [Required]
     string Name,
     string? Country,

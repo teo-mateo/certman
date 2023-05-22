@@ -1,6 +1,6 @@
 ﻿using MediatR;
 
-namespace certman.CQRS.Commands;
+namespace certman.CQRS.Commands.Storage;
 
 public record ClearWorkdirCommand(): IRequest<Unit>;
 

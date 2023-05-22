@@ -7,7 +7,7 @@ using Dapper;
 using MediatR;
 using Microsoft.Data.Sqlite;
 
-namespace certman.CQRS.Commands;
+namespace certman.CQRS.Commands.CACerts;
 
 public record CreateCACertCommand(CreateCACertDto Dto): IRequest<CACert>;
 

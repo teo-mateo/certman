@@ -1,9 +1,9 @@
-﻿using certman.CQRS.Queries;
-using certman.Models;
+﻿using certman.CQRS.Commands.Certs;
+using certman.CQRS.Queries;
 using Dapper;
 using MediatR;
 
-namespace certman.CQRS.Commands;
+namespace certman.CQRS.Commands.CACerts;
 
 public record DeleteCACertCommand(int Id) : IRequest<Unit>;
 
@@ -29,11 +29,11 @@ public class DeleteCACertCommandHandler : CertmanHandler<DeleteCACertCommand, Un
 
         foreach (var cert in caCert.Certs)
         {
-            await _mediator.Send(new DeleteTrustedCertCommand(cert.Id), ctoken);
+            await _mediator.Send(new DeleteTrustedCertCommand(caCert.Id, cert.Id), ctoken);
         }
         
         await using var connection = await GetOpenConnection();
-        await connection.ExecuteAsync("DELETE FROM CACerts WHERE Id = @id", new {id=request.Id});
+        await connection.ExecuteAsync("DELETE FROM CACerts WHERE Id = @Id", new { request.Id });
         return Unit.Value;
     }
 }

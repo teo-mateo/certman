@@ -8,7 +8,6 @@ namespace certman.CQRS.Queries;
 /// <summary>
 /// Returns a CA Cert and all its signed certificates
 /// </summary>
-/// <param name="Id"></param>
 public record GetCACertQuery(int Id) : IRequest<CACert?>;
 
 public class GetCACertQueryHandler : CertmanHandler<GetCACertQuery, CACert?>
@@ -18,20 +17,19 @@ public class GetCACertQueryHandler : CertmanHandler<GetCACertQuery, CACert?>
     protected override async Task<CACert?> ExecuteAsync(GetCACertQuery request, CancellationToken ctoken)
     {
         await using var connection = await GetOpenConnection();
-        var cert = await connection.QueryFirstOrDefaultAsync<CACert>("SELECT * FROM CACerts WHERE Id = @id", new {id=request.Id});
+        var caCert = await connection.QueryFirstOrDefaultAsync<CACert>("SELECT * FROM CACerts WHERE Id = @id", new {id=request.Id});
         
-        if (cert == null)
+        if (caCert == null)
             return null;
 
-        var certs = await connection.QueryAsync<Cert>("SELECT * FROM Certs WHERE CACertId = @id", new {id=request.Id});
-        cert.Certs = certs;
+        var leafCerts = await connection.QueryAsync<Cert>("SELECT * FROM Certs WHERE CACertId = @id", new {id=request.Id});
+        caCert.Certs = leafCerts;
 
-        foreach (var c in cert.Certs)
+        foreach (var c in caCert.Certs)
         {
-            // deserialize as AltNames to the same field
             c.AltNames = JsonSerializer.Deserialize<AltNames>(c.AltNames.ToString()!)!;
         }
         
-        return cert;
+        return caCert;
     }
 } 
