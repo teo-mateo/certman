@@ -137,7 +137,7 @@ public class CertsController : CertmanController
             return NotFound();
         }
 
-        var keyFile = Path.Combine(Config["Store"], cert.Keyfile);
+        var keyFile = Path.Combine(Config["Store"], cert.Keyfile).ThrowIfFileNotExists();
         var stream = System.IO.File.OpenRead(keyFile);
         return File(stream, "application/octet-stream", cert.Keyfile);
     }

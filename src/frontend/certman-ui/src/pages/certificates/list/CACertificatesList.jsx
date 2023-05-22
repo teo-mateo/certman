@@ -55,10 +55,10 @@ const CACertificatesList = () => {
                         <td>{cert.id}</td>
                         <td><Link to={`/certificates/${cert.id}`}>{cert.name}</Link></td>
                         <td>
-                            <DownloadButton certId={cert.id} fileName={cert.keyfile} apiMethod={apiService.getKeyfile} />
+                            <DownloadButton caCertId={cert.id} fileName={cert.keyfile} apiMethod={apiService.getKeyfile} />
                         </td>
                         <td>
-                            <DownloadButton certId={cert.id} fileName={cert.pemfile} apiMethod={apiService.getPemfile} />
+                            <DownloadButton caCertId={cert.id} fileName={cert.pemfile} apiMethod={apiService.getPemfile} />
                         </td>
                         <td>
                             <button className="button is-danger is-small" onClick={() => deleteCert(cert.id)}>Delete</button>

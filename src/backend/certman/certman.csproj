@@ -33,6 +33,9 @@
       <None Include="appsettings.dockerlinux.json">
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       </None>
+      <None Update="Certman.pfx">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
     </ItemGroup>
     <ItemGroup>
       <Folder Include="Routes\" />

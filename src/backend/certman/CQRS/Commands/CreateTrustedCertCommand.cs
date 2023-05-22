@@ -44,12 +44,12 @@ public class CreateTrustedCertCommandHandler : CertmanHandler<CreateTrustedCertC
             Locality = request.Dto.Locality ?? "",
             Organization = request.Dto.Organization ?? "",
             OrganizationUnit = request.Dto.OrganizationUnit ?? "",
-            CommonName = request.Dto.CommonName ?? request.Dto.Name
+            CommonName = request.Dto.CommonName
         });
 
         var extFile = await _ssl.CreateExtFile(
             request.Dto.Name, 
-            request.Dto.DnsNames ?? Array.Empty<string>(), 
+            request.Dto.DnsNames, 
             request.Dto.IpAddresses ?? Array.Empty<string>());
         
         // create signed certificate using the private key, csr, and ext file
