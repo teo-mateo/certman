@@ -12,7 +12,7 @@ public class DeleteTrustedCertCommandHandler : CertmanHandler<DeleteTrustedCertC
 
     protected override async Task<Unit> ExecuteAsync(DeleteTrustedCertCommand request, CancellationToken ctoken)
     {
-        await using var connection = await GetOpenConnection();
+        await using var connection = await GetOpenConnectionAsync();
 
         var cert = await connection.QueryFirstOrDefaultAsync<Cert>(
             "SELECT * FROM Certs WHERE caCertId = @CaCertId AND id = @Id", 

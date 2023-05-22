@@ -16,7 +16,7 @@ public class GetCACertQueryHandler : CertmanHandler<GetCACertQuery, CACert?>
 
     protected override async Task<CACert?> ExecuteAsync(GetCACertQuery request, CancellationToken ctoken)
     {
-        await using var connection = await GetOpenConnection();
+        await using var connection = await GetOpenConnectionAsync();
         var caCert = await connection.QueryFirstOrDefaultAsync<CACert>("SELECT * FROM CACerts WHERE Id = @id", new {id=request.Id});
         
         if (caCert == null)

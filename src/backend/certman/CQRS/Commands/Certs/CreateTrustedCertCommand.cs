@@ -74,7 +74,7 @@ public class CreateTrustedCertCommandHandler : CertmanHandler<CreateTrustedCertC
             });
 
         // insert cert into db
-        await using var connection = await GetOpenConnection();
+        await using var connection = await GetOpenConnectionAsync();
         var insertCommand = connection.CreateCommand();
         insertCommand.CommandText = @"INSERT INTO Certs (caCertId, Name, altNames, keyfile, csrfile, extfile, pfxfile, password, createdAt) 
                  VALUES (@CaCertId, @Name, @altNames, @keyfile, @csrfile, @extfile, @pfxfile, @Password, @CreatedAt); 
@@ -104,7 +104,7 @@ public class CreateTrustedCertCommandHandler : CertmanHandler<CreateTrustedCertC
 
     private async Task ThrowIfCertWithNameAlreadyExists(string name)
     {
-        await using var connection = await GetOpenConnection();
+        await using var connection = await GetOpenConnectionAsync();
         var count = await connection.ExecuteScalarAsync<int>(
             "SELECT COUNT(*) FROM Certs WHERE Name = @name", 
             new { name });

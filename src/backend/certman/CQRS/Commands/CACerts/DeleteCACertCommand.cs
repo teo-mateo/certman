@@ -32,7 +32,7 @@ public class DeleteCACertCommandHandler : CertmanHandler<DeleteCACertCommand, Un
             await _mediator.Send(new DeleteTrustedCertCommand(caCert.Id, cert.Id), ctoken);
         }
         
-        await using var connection = await GetOpenConnection();
+        await using var connection = await GetOpenConnectionAsync();
         await connection.ExecuteAsync("DELETE FROM CACerts WHERE Id = @Id", new { request.Id });
         return Unit.Value;
     }

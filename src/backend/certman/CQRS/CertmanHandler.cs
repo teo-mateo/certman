@@ -20,7 +20,7 @@ public abstract class CertmanHandler<TRequest, TResponse> : IRequestHandler<TReq
         return this.ExecuteAsync(request, cancellationToken);
     }
     
-    protected async Task<SqliteConnection> GetOpenConnection()
+    protected async Task<SqliteConnection> GetOpenConnectionAsync()
     {
         //get connection string
         var connectionString = Config.GetConnectionString("DefaultConnection");
@@ -28,6 +28,17 @@ public abstract class CertmanHandler<TRequest, TResponse> : IRequestHandler<TReq
         //open connection
         var connection = new SqliteConnection(connectionString);
         await connection.OpenAsync();
+        return connection;
+    }
+    
+    protected SqliteConnection GetOpenConnection()
+    {
+        //get connection string
+        var connectionString = Config.GetConnectionString("DefaultConnection");
+
+        //open connection
+        var connection = new SqliteConnection(connectionString);
+        connection.Open();
         return connection;
     }
 }

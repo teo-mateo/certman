@@ -8,6 +8,7 @@ RUN mkdir /certman
 RUN mkdir /certman/app
 RUN mkdir /certman/store
 RUN mkdir /certman/workdir
+RUN mkdir /certman/database
 
 # copy all files and directories from the publish folder (./certman/bin/Release/net6.0/publish) to the app folder (/app), excluding any files that start with appsettings
 COPY ./certman/bin/Release/net6.0/publish /certman/app

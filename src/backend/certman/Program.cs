@@ -1,8 +1,13 @@
 using System.Reflection;
+using certman.CQRS.Commands.Storage;
 using certman.Extensions;
 using certman.Services;
+using MediatR;
+using Microsoft.Data.Sqlite;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// create database if it doesn't exist
 
 //add swagger
 builder.AddSwagger();
@@ -37,6 +42,22 @@ builder.Services.AddMediatR(config =>
 });
 
 var app = builder.Build();
+
+app.Services.GetRequiredService<IHostApplicationLifetime>()
+    .ApplicationStarted
+    .Register(async () =>
+    {
+        var config = app.Services.GetRequiredService<IConfiguration>();
+        var mediator = app.Services.GetRequiredService<IMediator>();
+        
+        var connectionString = config.GetConnectionString("DefaultConnection");
+        var databaseFile = new SqliteConnectionStringBuilder(connectionString).DataSource;
+        if (!File.Exists(databaseFile))
+        {
+            app.Logger.LogInformation("Database does not exist, creating...");
+            await mediator.Send(new RecreateDbTablesCommand());
+        }
+    });
 
 app.Logger.LogInformation("Starting Certman API...");
 

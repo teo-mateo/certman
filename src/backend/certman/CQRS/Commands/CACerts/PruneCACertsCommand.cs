@@ -41,7 +41,7 @@ public class PruneCACertsCommandHandler : CertmanHandler<PruneCACertsCommand, Un
         File.Delete(keyFile);
         File.Delete(pemFile);
         
-        await using var connection = await GetOpenConnection();
+        await using var connection = await GetOpenConnectionAsync();
         
         // delete linked certs from db
         await using var deleteLinkedCertsCommand = connection.CreateCommand();

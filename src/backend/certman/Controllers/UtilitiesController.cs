@@ -21,7 +21,7 @@ public class UtilitiesController : CertmanController
     [HttpPost("create-db-tables")]
     public async Task<ActionResult> CreateDbTables()
     {
-        await _mediator.Send(new CreateDbTablesCommand());
+        await _mediator.Send(new RecreateDbTablesCommand());
         
         return Ok(new {success = true});
     }

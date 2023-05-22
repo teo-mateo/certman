@@ -24,7 +24,7 @@ public class CreateCACertCommandHandler : CertmanHandler<CreateCACertCommand, CA
 
     protected override async Task<CACert> ExecuteAsync(CreateCACertCommand request, CancellationToken ctoken)
     {
-        await using var connection = await GetOpenConnection();
+        await using var connection = await GetOpenConnectionAsync();
         
         //return if cert already exists, checking the db by name
         await ThrowIfCertWithNameAlreadyExists(request, connection);
