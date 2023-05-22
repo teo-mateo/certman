@@ -18,7 +18,7 @@ public class CreateDbTablesCommandHandler : CertmanHandler<CreateDbTablesCommand
         
         // execute script from scripts/db.sql
         await using var scriptCommand = connection.CreateCommand();
-        scriptCommand.CommandText = await System.IO.File.ReadAllTextAsync("scripts/db.sql", ctoken);
+        scriptCommand.CommandText = await System.IO.File.ReadAllTextAsync("Scripts/db.sql", ctoken);
         await scriptCommand.ExecuteNonQueryAsync(ctoken);
         
         return Unit.Value;

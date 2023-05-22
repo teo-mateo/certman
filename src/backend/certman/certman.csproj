@@ -23,7 +23,7 @@
       <PackageReference Include="Microsoft.Extensions.Logging" Version="6.0.0" />
     </ItemGroup>
     <ItemGroup>
-      <None Update="scripts\db.sql">
+      <None Update="Scripts\db.sql">
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       </None>
       <None Update="certman.sqlite">
@@ -36,8 +36,5 @@
       <None Update="Certman.pfx">
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       </None>
-    </ItemGroup>
-    <ItemGroup>
-      <Folder Include="Routes\" />
     </ItemGroup>
 </Project>
