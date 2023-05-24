@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using certman.Extensions;
+using Microsoft.AspNetCore.Mvc;
 
 namespace certman.Controllers;
 
@@ -27,9 +28,10 @@ public class SystemController : ControllerBase
     {
         object info = new
         {
-            ConnectionString = _config.GetConnectionString("DefaultConnection"),
+            ConnectionString = _config.GetConnectionString(),
             Workdir = _config["Workdir"],
             Store = _config["Store"],
+            Database = _config["Database"],
         };
 
         return new JsonResult(info);

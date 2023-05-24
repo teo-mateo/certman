@@ -1,4 +1,4 @@
-﻿using System.Data;
+﻿using certman.Extensions;
 using MediatR;
 using Microsoft.Data.Sqlite;
 
@@ -19,7 +19,7 @@ public class RecreateDbTablesCommandHandler : CertmanHandler<RecreateDbTablesCom
     
     private void DeleteDbIfExists()
     {
-        var connectionString = Config.GetConnectionString("DefaultConnection");
+        var connectionString = Config.GetConnectionString();
         var builder = new SqliteConnectionStringBuilder(connectionString);
         var databaseFile = builder.DataSource;
         if (File.Exists(databaseFile))
@@ -31,14 +31,15 @@ public class RecreateDbTablesCommandHandler : CertmanHandler<RecreateDbTablesCom
     private async Task RecreateDbTables(CancellationToken ctoken)
     {
         await using var connection = await GetOpenConnectionAsync();
-        // delete the db if it exists
+
         await using var deleteCommand = connection.CreateCommand();
         deleteCommand.CommandText = "DROP TABLE IF EXISTS Certs; DROP TABLE IF EXISTS CACerts;";
         await deleteCommand.ExecuteNonQueryAsync(ctoken);
         
         // execute script from scripts/db.sql
         await using var scriptCommand = connection.CreateCommand();
-        scriptCommand.CommandText = await System.IO.File.ReadAllTextAsync("Scripts/db.sql", ctoken);
+        var scriptsFile = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Scripts/db.sql").ThrowIfFileNotExists();
+        scriptCommand.CommandText = await File.ReadAllTextAsync(scriptsFile, ctoken);
         await scriptCommand.ExecuteNonQueryAsync(ctoken);
         
         SqliteConnection.ClearAllPools();

@@ -45,18 +45,21 @@ var app = builder.Build();
 
 app.Services.GetRequiredService<IHostApplicationLifetime>()
     .ApplicationStarted
-    .Register(async () =>
+    .Register(() =>
     {
         var config = app.Services.GetRequiredService<IConfiguration>();
         var mediator = app.Services.GetRequiredService<IMediator>();
-        
-        var connectionString = config.GetConnectionString("DefaultConnection");
+
+        var connectionString = $"Data Source={config["Database"]}";
         var databaseFile = new SqliteConnectionStringBuilder(connectionString).DataSource;
-        if (!File.Exists(databaseFile))
+        if (File.Exists(databaseFile))
         {
-            app.Logger.LogInformation("Database does not exist, creating...");
-            await mediator.Send(new RecreateDbTablesCommand());
+            app.Logger.LogInformation("Database exists: {DatabaseFile}", databaseFile);
+            return;
         }
+        
+        app.Logger.LogInformation("Database does not exist, creating...");
+        mediator.Send(new RecreateDbTablesCommand()).GetAwaiter().GetResult();
     });
 
 app.Logger.LogInformation("Starting Certman API...");

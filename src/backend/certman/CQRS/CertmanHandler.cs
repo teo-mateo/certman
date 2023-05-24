@@ -1,4 +1,5 @@
-﻿using MediatR;
+﻿using certman.Extensions;
+using MediatR;
 using Microsoft.Data.Sqlite;
 
 namespace certman.CQRS;
@@ -23,22 +24,11 @@ public abstract class CertmanHandler<TRequest, TResponse> : IRequestHandler<TReq
     protected async Task<SqliteConnection> GetOpenConnectionAsync()
     {
         //get connection string
-        var connectionString = Config.GetConnectionString("DefaultConnection");
+        var connectionString = Config.GetConnectionString();
 
         //open connection
         var connection = new SqliteConnection(connectionString);
         await connection.OpenAsync();
-        return connection;
-    }
-    
-    protected SqliteConnection GetOpenConnection()
-    {
-        //get connection string
-        var connectionString = Config.GetConnectionString("DefaultConnection");
-
-        //open connection
-        var connection = new SqliteConnection(connectionString);
-        connection.Open();
         return connection;
     }
 }
