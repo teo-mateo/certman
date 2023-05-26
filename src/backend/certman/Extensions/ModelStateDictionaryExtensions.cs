@@ -2,6 +2,7 @@
 
 namespace certman.Extensions;
 
+/// This method aggregates all errors into a single object that can be returned
 public static class ModelStateDictionaryExtensions
 {
     public static dynamic? GetErrorMessages(this ModelStateDictionary modelState)
