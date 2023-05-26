@@ -1,4 +1,5 @@
 using System.Reflection;
+using certman.CQRS.Commands.Startup;
 using certman.CQRS.Commands.Storage;
 using certman.Extensions;
 using certman.Services;
@@ -47,19 +48,9 @@ app.Services.GetRequiredService<IHostApplicationLifetime>()
     .ApplicationStarted
     .Register(() =>
     {
-        var config = app.Services.GetRequiredService<IConfiguration>();
         var mediator = app.Services.GetRequiredService<IMediator>();
-
-        var connectionString = $"Data Source={config["Database"]}";
-        var databaseFile = new SqliteConnectionStringBuilder(connectionString).DataSource;
-        if (File.Exists(databaseFile))
-        {
-            app.Logger.LogInformation("Database exists: {DatabaseFile}", databaseFile);
-            return;
-        }
-        
-        app.Logger.LogInformation("Database does not exist, creating...");
-        mediator.Send(new RecreateDbTablesCommand()).GetAwaiter().GetResult();
+        mediator.Send(new EnsureDatabaseExistsCommand()).GetAwaiter().GetResult();
+        mediator.Send(new EnsureDataDirsExistCommand()).GetAwaiter().GetResult();
     });
 
 app.Logger.LogInformation("Starting Certman API...");

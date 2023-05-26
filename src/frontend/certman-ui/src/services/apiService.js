@@ -1,7 +1,7 @@
 const BASE_URL = "http://localhost:5050";
 
 const getVersion = async () => {
-    const response = await fetch(`${BASE_URL}/server/version`);
+    const response = await fetch(`${BASE_URL}/system/version`);
     if (!response.ok) {
         throw new Error('Error fetching server version');
     }
