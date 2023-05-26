@@ -6,12 +6,12 @@ set -x
 # Build script for the project
 
 # Clean the project
-echo "Cleaning the project..."
-dotnet clean || exit 1
+#echo "Cleaning the project..."
+#dotnet clean || exit 1
 
 # Build the project
 echo "Building the project..."
-cd certman || exit 1
+cd certman-server/certman || exit 1
 
 dotnet build || exit 1
 
@@ -26,5 +26,5 @@ dotnet publish -c Release -r linux-x64 --self-contained true /p:PublishSingleFil
 rm ./bin/Release/net6.0/linux-x64/publish/appsettings.json
 mv ./bin/Release/net6.0/linux-x64/publish/appsettings.dockerlinux.json ./bin/Release/net6.0/linux-x64/publish/appsettings.json
 
-cd .. 
+cd ../.. 
 docker build . -t certman-backend || exit 1
