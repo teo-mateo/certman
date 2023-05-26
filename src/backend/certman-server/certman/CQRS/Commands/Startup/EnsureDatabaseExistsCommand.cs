@@ -9,9 +9,9 @@ public record EnsureDatabaseExistsCommand : IRequest<Unit>;
 public class EnsureDatabaseExistsHandler : CertmanHandler<EnsureDatabaseExistsCommand, Unit>
 {
     private readonly IMediator _mediator;
-    private readonly ILogger _logger;
+    private readonly ILogger<EnsureDatabaseExistsHandler> _logger;
 
-    public EnsureDatabaseExistsHandler(IConfiguration config, IMediator mediator, ILogger logger) : base(config)
+    public EnsureDatabaseExistsHandler(IConfiguration config, IMediator mediator, ILogger<EnsureDatabaseExistsHandler> logger) : base(config)
     {
         _mediator = mediator;
         _logger = logger;

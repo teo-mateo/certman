@@ -6,9 +6,9 @@ public record EnsureDataDirsExistCommand : IRequest<Unit>;
 
 public class EnsureDataDirsExistHandler : CertmanHandler<EnsureDataDirsExistCommand, Unit>
 {
-    private readonly ILogger _logger;
+    private readonly ILogger<EnsureDataDirsExistHandler> _logger;
 
-    public EnsureDataDirsExistHandler(IConfiguration config, ILogger logger) : base(config)
+    public EnsureDataDirsExistHandler(IConfiguration config, ILogger<EnsureDataDirsExistHandler> logger) : base(config)
     {
         _logger = logger;
     }
