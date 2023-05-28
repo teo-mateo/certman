@@ -1,10 +1,12 @@
 using System.Reflection;
 using certman.CQRS.Commands.Startup;
-using certman.CQRS.Commands.Storage;
 using certman.Extensions;
 using certman.Services;
 using MediatR;
-using Microsoft.Data.Sqlite;
+using Microsoft.AspNetCore.Hosting.Server;
+using Microsoft.AspNetCore.Hosting.Server.Features;
+
+Directory.SetCurrentDirectory(AppContext.BaseDirectory);
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -51,6 +53,7 @@ app.Services.GetRequiredService<IHostApplicationLifetime>()
         var mediator = app.Services.GetRequiredService<IMediator>();
         mediator.Send(new EnsureDatabaseExistsCommand()).GetAwaiter().GetResult();
         mediator.Send(new EnsureDataDirsExistCommand()).GetAwaiter().GetResult();
+        mediator.Send(new EnsureCertificateExistsCommand()).GetAwaiter().GetResult();
     });
 
 app.Logger.LogInformation("Starting Certman API...");
@@ -63,4 +66,11 @@ app.UseCors(c => c.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
 
 app.MapControllers();
 
-app.Run();
+try
+{
+    app.Run();
+}
+catch (Exception ex)
+{
+    Console.WriteLine(ex.Message);
+}

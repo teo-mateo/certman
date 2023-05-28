@@ -15,9 +15,6 @@ RUN mkdir /certman/data/workdir
 # copy all files and directories from the publish folder (./certman/bin/Release/net6.0/publish) to the app folder (/app), excluding any files that start with appsettings
 COPY ./certman-server/certman/bin/Release/net6.0/linux-x64/publish /certman/app
 
-# copy the certificate
-COPY ./certificate/Certman.pfx /certman/app
-
 EXPOSE 5050
 EXPOSE 5051
 

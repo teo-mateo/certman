@@ -79,7 +79,6 @@ public class CertsController : CertmanController
 
         return Ok(caCert);
     }
-    
 
     /// <summary>
     /// Downloads the key file part of a CA Cert
@@ -87,18 +86,8 @@ public class CertsController : CertmanController
     [HttpGet("ca-certs/{id}/keyfile")]
     public async Task<IActionResult> DownloadCACertKeyfile(int id)
     {
-        _logger.LogInformation("Downloading CA Cert Keyfile: {Id}", id);
-        
-        var cert = await _mediator.Send(new GetCACertQuery(id));
-        if (cert == null)
-        {
-            return NotFound();
-        }
-        
-        var keyFile = Path.Combine(Config["Store"], cert.Keyfile).ThrowIfFileNotExists();
-
-        var stream = System.IO.File.OpenRead(keyFile);
-        return File(stream, "application/octet-stream", cert.Keyfile);
+        var (file, stream) = await _mediator.Send(new GetCACertFileStreamQuery(id, c => c.Keyfile));
+        return File(stream, "application/octet-stream", file);
     }
     
     /// <summary>
@@ -107,59 +96,47 @@ public class CertsController : CertmanController
     [HttpGet("ca-certs/{id}/pemfile")]
     public async Task<IActionResult> DownloadCACertPemfile(int id)
     {
-        _logger.LogInformation("Downloading CA Cert Pemfile: {Id}", id);
-        
-        var cert = await _mediator.Send(new GetCACertQuery(id));
-        if (cert == null)
-        {
-            return NotFound();
-        }
-        
-        var pemFile = Path.Combine(Config["Store"], cert.Pemfile).ThrowIfFileNotExists();
-        var stream = System.IO.File.OpenRead(pemFile);
-        return File(stream, "application/octet-stream", cert.Pemfile);
+        var (file, stream) = await _mediator.Send(new GetCACertFileStreamQuery(id, c => c.Pemfile));
+        return File(stream, "application/octet-stream", file);
     }
 
+    /// <summary>
+    /// Downloads the pfx file of a Leaf Cert
+    /// </summary>
     [HttpGet("ca-certs/{caCertId}/certs/{id:int}/pfxfile")]
     public async Task<IActionResult> DownloadCertPfxFile(int caCertId, int id)
     {
-        _logger.LogInformation("Downloading Cert Pfxfile: {Id}", id);
-        
-        var cert = await _mediator.Send(new GetTrustedCertQuery(caCertId, id));
-        if (cert == null)
-        {
-            return NotFound();
-        }
-
-        var pfxFile = Path.Combine(Config["Store"], cert.Pfxfile).ThrowIfFileNotExists();
-        await using var stream = System.IO.File.OpenRead(pfxFile);
-        return File(stream, "application/octet-stream", cert.Pfxfile);
-    }
-    
-    // get the key file of a trusted cert
-    [HttpGet("ca-certs/{caCertId}/certs/{id}/keyfile")]
-    public async Task<IActionResult> DownloadCertKeyFile(int caCertId, int id)
-    {
-        _logger.LogInformation("Downloading Cert Keyfile: {Id}", id);
-        
-        var cert = await _mediator.Send(new GetTrustedCertQuery(caCertId, id));
-        if (cert == null)
-        {
-            return NotFound();
-        }
-
-        var keyFile = Path.Combine(Config["Store"], cert.Keyfile).ThrowIfFileNotExists();
-        await using var stream = System.IO.File.OpenRead(keyFile);
-        return File(stream, "application/octet-stream", cert.Keyfile);
+        var (file, stream) = await _mediator.Send(new GetLeafCertFileStreamQuery(caCertId, id, c => c.Pfxfile));
+        return File(stream, "application/octet-stream", file);
     }
     
     /// <summary>
-    /// Creates a new trusted certificate, signed by the CA Cert
+    /// Downloads the key file of a Leaf Cert
+    /// </summary>
+    [HttpGet("ca-certs/{caCertId}/certs/{id}/keyfile")]
+    public async Task<IActionResult> DownloadCertKeyFile(int caCertId, int id)
+    {
+        var (file, stream) = await _mediator.Send(new GetLeafCertFileStreamQuery(caCertId, id, c => c.Keyfile));
+        return File(stream, "application/octet-stream", file);
+    }
+    
+    /// <summary>
+    /// Downloads the crt file of a Leaf Cert
+    /// </summary>
+    [HttpGet("ca-certs/{caCertId}/certs/{id}/crtfile")]
+    public async Task<IActionResult> DownloadCertCrtFile(int caCertId, int id)
+    {
+        var (file, stream) = await _mediator.Send(new GetLeafCertFileStreamQuery(caCertId, id, c => c.Crtfile));
+        return File(stream, "application/octet-stream", file);
+    }
+    
+    /// <summary>
+    /// Creates a new leaf certificate, signed by the CA Cert
     /// </summary>
     [HttpPost("ca-certs/{id}/certs")]
-    public async Task<IActionResult> CreateTrustedCert(int id, [FromBody] CreateLeafCertDto dto)
+    public async Task<IActionResult> CreateLeafCert(int id, [FromBody] CreateLeafCertDto dto)
     {
-        _logger.LogInformation("Creating Trusted Cert: {DtoName}", dto.Name);
+        _logger.LogInformation("Creating Leaf Cert: {DtoName}", dto.Name);
         
         if (!ModelState.IsValid)
         {
@@ -167,20 +144,20 @@ public class CertsController : CertmanController
             return new JsonResult(ModelState.GetErrorMessages());
         }
         
-        var cert = await _mediator.Send(new CreateTrustedCertCommand(id, dto));
+        var cert = await _mediator.Send(new CreateLeafCertCommand(id, dto));
         return Ok(cert);
         
     }
 
     /// <summary>
-    /// Deletes a trusted cert and all its files
+    /// Deletes a leaf cert and all its files
     /// </summary>
     [HttpDelete("ca-certs/{caCertId}/certs/{id}")]
-    public async Task<IActionResult> GetTrustedCert(int caCertId, int id)
+    public async Task<IActionResult> GetLeafCert(int caCertId, int id)
     {
-        _logger.LogInformation("Deleting Trusted Cert: {Id}", id);
+        _logger.LogInformation("Deleting Leaf Cert: {Id}", id);
         
-        await _mediator.Send(new DeleteTrustedCertCommand(caCertId, id));
+        await _mediator.Send(new DeleteLeafCertCommand(caCertId, id));
         return Ok();
     }
 

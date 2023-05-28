@@ -7,7 +7,7 @@ public interface IOpenSSL
     public Task<(string keyFile, string csrFile)> CreateKeyAndCsr(string name, CsrInfo csrInfo);
     public Task<string> CreateExtFile(string name, string[] dnsNames, string[] ipAddresses);
 
-    public Task<string> CreateSelfSignedCert(
+    public Task<string> CreateSignedCert(
         string name, 
         string keyFileCA, 
         string pemFileCA, 

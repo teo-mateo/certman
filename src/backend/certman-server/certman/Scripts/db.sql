@@ -16,6 +16,7 @@ CREATE TABLE IF NOT EXISTS Certs (
                                      keyfile TEXT NOT NULL,
                                      csrfile TEXT NOT NULL,
                                      extfile TEXT NOT NULL,
+                                     crtfile TEXT NOT NULL,
                                      pfxfile TEXT NOT NULL,
                                      password TEXT NOT NULL,
                                      createdAt TIMESTAMP NOT NULL,

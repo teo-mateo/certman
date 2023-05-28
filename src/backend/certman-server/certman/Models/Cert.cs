@@ -9,6 +9,7 @@ public class Cert
     public string Keyfile { get; set; } = "";
     public string Csrfile { get; set; } = "";
     public string Extfile { get; set; } = "";
+    public string Crtfile { get; set; } = "";
     public string Pfxfile { get; set; } = "";
     public string Password { get; set; } = "";
     public DateTime CreatedAt { get; set; }

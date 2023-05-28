@@ -117,7 +117,7 @@ public class OpenSSL: IOpenSSL
         return $"{name}.ext";
     }
 
-    public async Task<string> CreateSelfSignedCert(string name, string keyFileCA, string pemFileCA, string csrFile, string extFile)
+    public async Task<string> CreateSignedCert(string name, string keyFileCA, string pemFileCA, string csrFile, string extFile)
     {
         name = name.SanitizeFileName();
         

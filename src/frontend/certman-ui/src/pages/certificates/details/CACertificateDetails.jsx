@@ -52,6 +52,7 @@ const CACertificateDetails = () => {
                         <th>Keyfile</th>
                         <th>CSR File</th>
                         <th>EXT File</th>
+                        <th>CRT File</th>
                         <th>PFX File</th>
                         <th>Action</th>
                     </tr>
@@ -65,10 +66,11 @@ const CACertificateDetails = () => {
                     {details.certs.map(cert => (
                         <tr key={cert.id} style={{verticalAlign: "middle"}}>
                             <td style={{verticalAlign: "middle"}}>{cert.name}</td>
-                            <td style={{verticalAlign: "middle"}}><DownloadButton certId={cert.id} fileName={cert.keyfile} apiMethod={apiService.downloadTrustedCertKeyFile} /> </td>
+                            <td style={{verticalAlign: "middle"}}><DownloadButton caCertId={cert.caCertId} certId={cert.id} fileName={cert.keyfile} apiMethod={apiService.downloadLeafCertKeyFile} /> </td>
                             <td style={{verticalAlign: "middle"}}>{cert.csrfile}</td>
                             <td style={{verticalAlign: "middle"}}>{cert.extfile}</td>
-                            <td style={{verticalAlign: "middle"}}><DownloadButton certId={cert.id} fileName={cert.pfxfile} apiMethod={apiService.downloadTrustedCertPfxFile} /> </td>
+                            <td style={{verticalAlign: "middle"}}><DownloadButton caCertId={cert.caCertId} certId={cert.id} fileName={cert.crtfile} apiMethod={apiService.downloadLeafCertCrtFile} /> </td>
+                            <td style={{verticalAlign: "middle"}}><DownloadButton caCertId={cert.caCertId} certId={cert.id} fileName={cert.pfxfile} apiMethod={apiService.downloadLeafCertPfxFile} /> </td>
                             <td style={{verticalAlign: "middle"}}>
                                 <button className="button is-danger is-small" onClick={() => deleteCert(details.id, cert.id)}>Delete</button>
                             </td>

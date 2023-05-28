@@ -36,7 +36,7 @@ const getPemfile = async (caCertId) => {
     return data;
 };
 
-const downloadTrustedCertPfxFile = async (caCertId, id) => {
+const downloadLeafCertPfxFile = async (caCertId, id) => {
     const response = await fetch(`${BASE_URL}/api/certs/ca-certs/${caCertId}/certs/${id}/pfxfile`);
     if (!response.ok) {
         throw new Error(`Error fetching pfxfile for cert ID: ${id}`);
@@ -45,8 +45,17 @@ const downloadTrustedCertPfxFile = async (caCertId, id) => {
     return data;
 }
 
-// getTrustedCertKeyfile
-const downloadTrustedCertKeyFile = async (caCertId, id) => {
+const downloadLeafCertCrtFile = async (caCertId, id) => {
+    const response = await fetch(`${BASE_URL}/api/certs/ca-certs/${caCertId}/certs/${id}/crtfile`);
+    if (!response.ok) {
+        throw new Error(`Error fetching crtfile for cert ID: ${id}`);
+    }
+    const data = await response.blob();
+    return data;
+}
+
+// getLeafCertKeyfile
+const downloadLeafCertKeyFile = async (caCertId, id) => {
     const response = await fetch(`${BASE_URL}/api/certs/ca-certs/${caCertId}/certs/${id}/keyfile`);
     if (!response.ok) {
         throw new Error(`Error fetching keyfile for cert ID: ${id}`);
@@ -117,8 +126,9 @@ const apiService = {
     getCACerts,
     getKeyfile,
     getPemfile,
-    downloadTrustedCertPfxFile,
-    downloadTrustedCertKeyFile,
+    downloadLeafCertPfxFile,
+    downloadLeafCertKeyFile,
+    downloadLeafCertCrtFile,
     createCACert,
     getCACertDetails,
     deleteCACert,

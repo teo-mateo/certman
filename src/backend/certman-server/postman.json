@@ -143,7 +143,7 @@
 			"response": []
 		},
 		{
-			"name": "Create Trusted Certificate signed by a CA Cert",
+			"name": "Create Leaf Certificate signed by a CA Cert",
 			"request": {
 				"method": "POST",
 				"header": [
@@ -174,7 +174,7 @@
 			"response": []
 		},
 		{
-			"name": "Delete Trusted Certificate",
+			"name": "Delete Leaf Certificate",
 			"event": [
 				{
 					"listen": "test",

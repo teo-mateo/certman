@@ -29,7 +29,7 @@ public class DeleteCACertCommandHandler : CertmanHandler<DeleteCACertCommand, Un
 
         foreach (var cert in caCert.Certs)
         {
-            await _mediator.Send(new DeleteTrustedCertCommand(caCert.Id, cert.Id), ctoken);
+            await _mediator.Send(new DeleteLeafCertCommand(caCert.Id, cert.Id), ctoken);
         }
         
         await using var connection = await GetOpenConnectionAsync();

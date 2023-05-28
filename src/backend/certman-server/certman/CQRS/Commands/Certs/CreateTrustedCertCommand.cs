@@ -10,19 +10,20 @@ using MediatR;
 
 namespace certman.CQRS.Commands.Certs;
 
-public record CreateTrustedCertCommand(int CaCertId, CreateLeafCertDto Dto) : IRequest<Cert>;
-public class CreateTrustedCertCommandHandler : CertmanHandler<CreateTrustedCertCommand, Cert>
+public record CreateLeafCertCommand(int CaCertId, CreateLeafCertDto Dto) : IRequest<Cert>;
+
+public class CreateLeafCertCommandHandler : CertmanHandler<CreateLeafCertCommand, Cert>
 {
     private readonly IMediator _mediator;
     private readonly IOpenSSL _ssl;
 
-    public CreateTrustedCertCommandHandler(IConfiguration config, IMediator mediator, IOpenSSL ssl) : base(config)
+    public CreateLeafCertCommandHandler(IConfiguration config, IMediator mediator, IOpenSSL ssl) : base(config)
     {
         _mediator = mediator;
         _ssl = ssl;
     }
 
-    protected override async Task<Cert> ExecuteAsync(CreateTrustedCertCommand request, CancellationToken ctoken)
+    protected override async Task<Cert> ExecuteAsync(CreateLeafCertCommand request, CancellationToken ctoken)
     {
         var caCert = await _mediator.Send(new GetCACertQuery(request.CaCertId), ctoken);
         if (caCert == null)
@@ -56,7 +57,7 @@ public class CreateTrustedCertCommandHandler : CertmanHandler<CreateTrustedCertC
             request.Dto.IpAddresses ?? Array.Empty<string>());
         
         // create signed certificate using the private key, csr, and ext file
-        var crtFile = await _ssl.CreateSelfSignedCert(
+        var crtFile = await _ssl.CreateSignedCert(
             request.Dto.Name,
             keyFileCA,
             pemFileCA,
@@ -76,8 +77,8 @@ public class CreateTrustedCertCommandHandler : CertmanHandler<CreateTrustedCertC
         // insert cert into db
         await using var connection = await GetOpenConnectionAsync();
         var insertCommand = connection.CreateCommand();
-        insertCommand.CommandText = @"INSERT INTO Certs (caCertId, Name, altNames, keyfile, csrfile, extfile, pfxfile, password, createdAt) 
-                 VALUES (@CaCertId, @Name, @altNames, @keyfile, @csrfile, @extfile, @pfxfile, @Password, @CreatedAt); 
+        insertCommand.CommandText = @"INSERT INTO Certs (caCertId, Name, altNames, keyfile, csrfile, extfile, crtfile, pfxfile, password, createdAt) 
+                 VALUES (@CaCertId, @Name, @altNames, @keyfile, @csrfile, @extfile, @crtfile, @pfxfile, @Password, @CreatedAt); 
                  SELECT last_insert_rowid();";
         insertCommand.Parameters.AddWithValue("@CaCertId", request.CaCertId);
         insertCommand.Parameters.AddWithValue("@Name", request.Dto.Name);
@@ -85,6 +86,7 @@ public class CreateTrustedCertCommandHandler : CertmanHandler<CreateTrustedCertC
         insertCommand.Parameters.AddWithValue("@keyfile", keyFile);
         insertCommand.Parameters.AddWithValue("@csrfile", csrFile);
         insertCommand.Parameters.AddWithValue("@extfile", extFile);
+        insertCommand.Parameters.AddWithValue("@crtfile", crtFile);
         insertCommand.Parameters.AddWithValue("@pfxfile", pfxFile);
         insertCommand.Parameters.AddWithValue("@Password", request.Dto.Password);
         insertCommand.Parameters.AddWithValue("@CreatedAt", DateTime.Now);
@@ -94,12 +96,13 @@ public class CreateTrustedCertCommandHandler : CertmanHandler<CreateTrustedCertC
         MoveFromWorkdirToStore(keyFile);
         MoveFromWorkdirToStore(csrFile);
         MoveFromWorkdirToStore(extFile);
+        MoveFromWorkdirToStore(crtFile);
         MoveFromWorkdirToStore(pfxFile);
         
         //cleanup workdir
         await _mediator.Send(new ClearWorkdirCommand(), ctoken);
         
-        return (await _mediator.Send(new GetTrustedCertQuery(request.CaCertId, id), ctoken))!;
+        return (await _mediator.Send(new GetLeafCertQuery(request.CaCertId, id), ctoken))!;
     }
 
     private async Task ThrowIfCertWithNameAlreadyExists(string name)

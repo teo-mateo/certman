@@ -123,7 +123,7 @@ IP.2 = 192.168.1.2".Trim());
             name,
             new[] { "test1.com", "test2.com" },
             new[] { "192.168.1.1" });
-        var crtFile = await _openSSL.CreateSelfSignedCert(
+        var crtFile = await _openSSL.CreateSignedCert(
             name, 
             keyFileCA, 
             pemFileCA, 
@@ -157,7 +157,7 @@ IP.2 = 192.168.1.2".Trim());
             name,
             new[] { "test1.com", "test2.com" },
             new[] { "192.168.1.1" });
-        var crtFile = await _openSSL.CreateSelfSignedCert(
+        var crtFile = await _openSSL.CreateSignedCert(
             name, 
             keyFileCA, 
             pemFileCA, 

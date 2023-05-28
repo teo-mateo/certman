@@ -8,16 +8,8 @@
     }
   },
   "profiles": {
-    "http": {
-      "commandName": "Project",
-      "dotnetRunMessages": true,
-      "launchBrowser": true,
-      "applicationUrl": "http://localhost:5131",
-      "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development"
-      }
-    },
-    "https": {
+    "Kestrel": {
+      "workingDirectory": "$(ProjectDir)/bin/Debug/net6.0",
       "commandName": "Project",
       "dotnetRunMessages": true,
       "launchBrowser": true,
@@ -27,6 +19,7 @@
       }
     },
     "IIS Express": {
+      "workingDirectory": "$(ProjectDir)/bin/Debug/net6.0",
       "commandName": "IISExpress",
       "launchBrowser": true,
       "environmentVariables": {

@@ -4,13 +4,13 @@ using MediatR;
 
 namespace certman.CQRS.Commands.Certs;
 
-public record DeleteTrustedCertCommand(int CaCertId, int Id) : IRequest<Unit>;
+public record DeleteLeafCertCommand(int CaCertId, int Id) : IRequest<Unit>;
 
-public class DeleteTrustedCertCommandHandler : CertmanHandler<DeleteTrustedCertCommand, Unit>
+public class DeleteLeafCertCommandHandler : CertmanHandler<DeleteLeafCertCommand, Unit>
 {
-    public DeleteTrustedCertCommandHandler(IConfiguration config) : base(config) { }
+    public DeleteLeafCertCommandHandler(IConfiguration config) : base(config) { }
 
-    protected override async Task<Unit> ExecuteAsync(DeleteTrustedCertCommand request, CancellationToken ctoken)
+    protected override async Task<Unit> ExecuteAsync(DeleteLeafCertCommand request, CancellationToken ctoken)
     {
         await using var connection = await GetOpenConnectionAsync();
 
@@ -21,9 +21,10 @@ public class DeleteTrustedCertCommandHandler : CertmanHandler<DeleteTrustedCertC
         if (cert == null)
             return Unit.Value;
         
-        // delete all files of the trusted cert (Cert class) from the store
+        // delete all files of the leaf cert (Cert class) from the store
         File.Delete(Path.Combine(Config["Store"], cert.Csrfile));
         File.Delete(Path.Combine(Config["Store"], cert.Extfile));
+        File.Delete(Path.Combine(Config["Store"], cert.Crtfile));
         File.Delete(Path.Combine(Config["Store"], cert.Pfxfile));
         File.Delete(Path.Combine(Config["Store"], cert.Keyfile));
         
