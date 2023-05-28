@@ -1,4 +1,5 @@
-﻿using MediatR;
+﻿using certman.Extensions;
+using MediatR;
 
 namespace certman.CQRS.Commands.Startup;
 
@@ -6,26 +7,22 @@ public record EnsureDataDirsExistCommand : IRequest<Unit>;
 
 public class EnsureDataDirsExistHandler : CertmanHandler<EnsureDataDirsExistCommand, Unit>
 {
-    private readonly ILogger<EnsureDataDirsExistHandler> _logger;
-
-    public EnsureDataDirsExistHandler(IConfiguration config, ILogger<EnsureDataDirsExistHandler> logger) : base(config)
-    {
-        _logger = logger;
-    }
+    public EnsureDataDirsExistHandler(IConfiguration config, ILogger<EnsureDataDirsExistHandler> logger) 
+        : base(config, logger) { }
 
     protected override Task<Unit> ExecuteAsync(EnsureDataDirsExistCommand request, CancellationToken ctoken)
     {
-        var workdir = Config["Workdir"];
+        var workdir = _config.GetWorkdir();
         if (!Directory.Exists(workdir))
         {
-            _logger.LogInformation("Workdir does not exist, creating {Workdir}...", workdir);
+            _logger?.LogInformation("Workdir does not exist, creating {Workdir}...", workdir);
             Directory.CreateDirectory(workdir);
         }
         
-        var store = Config["Store"];
+        var store = _config["Store"];
         if (!Directory.Exists(store))
         {
-            _logger.LogInformation("Store does not exist, creating {Store}...", store);
+            _logger?.LogInformation("Store does not exist, creating {Store}...", store);
             Directory.CreateDirectory(store);
         }
         

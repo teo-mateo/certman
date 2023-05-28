@@ -7,11 +7,13 @@ namespace certman.CQRS;
 public abstract class CertmanHandler<TRequest, TResponse> : IRequestHandler<TRequest, TResponse>
     where TRequest : IRequest<TResponse>
 {
-    protected readonly IConfiguration Config;
+    protected readonly IConfiguration _config;
+    protected readonly ILogger? _logger;
 
-    protected CertmanHandler(IConfiguration config)
+    protected CertmanHandler(IConfiguration config, ILogger? logger = null)
     {
-        Config = config;
+        _config = config;
+        _logger = logger;
     }
 
     protected abstract Task<TResponse> ExecuteAsync(TRequest request, CancellationToken ctoken);
@@ -24,7 +26,7 @@ public abstract class CertmanHandler<TRequest, TResponse> : IRequestHandler<TReq
     protected async Task<SqliteConnection> GetOpenConnectionAsync()
     {
         //get connection string
-        var connectionString = Config.GetConnectionString();
+        var connectionString = _config.GetConnectionString();
 
         //open connection
         var connection = new SqliteConnection(connectionString);

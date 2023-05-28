@@ -56,8 +56,8 @@ public class CreateCACertCommandHandler : CertmanHandler<CreateCACertCommand, CA
 
     private void MoveFromWorkdirToStore(string file)
     {
-        var source = Path.Combine(Config["Workdir"], file).ThrowIfFileNotExists();
-        var dest = Path.Combine(Config["Store"], file).ThrowIfFileExists();
+        var source = Path.Combine(_config["Workdir"], file).ThrowIfFileNotExists();
+        var dest = Path.Combine(_config["Store"], file).ThrowIfFileExists();
         File.Move(source, dest);
     }
 

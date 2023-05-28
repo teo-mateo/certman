@@ -22,11 +22,11 @@ public class DeleteLeafCertCommandHandler : CertmanHandler<DeleteLeafCertCommand
             return Unit.Value;
         
         // delete all files of the leaf cert (Cert class) from the store
-        File.Delete(Path.Combine(Config["Store"], cert.Csrfile));
-        File.Delete(Path.Combine(Config["Store"], cert.Extfile));
-        File.Delete(Path.Combine(Config["Store"], cert.Crtfile));
-        File.Delete(Path.Combine(Config["Store"], cert.Pfxfile));
-        File.Delete(Path.Combine(Config["Store"], cert.Keyfile));
+        File.Delete(Path.Combine(_config["Store"], cert.Csrfile));
+        File.Delete(Path.Combine(_config["Store"], cert.Extfile));
+        File.Delete(Path.Combine(_config["Store"], cert.Crtfile));
+        File.Delete(Path.Combine(_config["Store"], cert.Pfxfile));
+        File.Delete(Path.Combine(_config["Store"], cert.Keyfile));
         
         await connection.ExecuteAsync("DELETE FROM Certs WHERE Id = @Id", new { request.Id });
         return Unit.Value;

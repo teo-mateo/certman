@@ -11,20 +11,18 @@ public record GetCACertFileStreamQuery(
 public class GetCACertFileStreamHandler : CertmanHandler<GetCACertFileStreamQuery, (string, FileStream)>
 {
     private readonly IMediator _mediator;
-    private readonly ILogger<GetCACertFileStreamQuery> _logger;
 
     public GetCACertFileStreamHandler(
         IConfiguration config,
         IMediator mediator,
-        ILogger<GetCACertFileStreamQuery> logger) : base(config)
+        ILogger<GetCACertFileStreamQuery> logger) : base(config, logger)
     {
         _mediator = mediator;
-        _logger = logger;
     }
 
     protected override async Task<(string, FileStream)> ExecuteAsync(GetCACertFileStreamQuery request, CancellationToken ctoken)
     {
-        _logger.LogInformation("Downloading CA Cert Pemfile: {Id}", request.CaCertId);
+        _logger?.LogInformation("Downloading CA Cert Pemfile: {Id}", request.CaCertId);
         
         var cert = await _mediator.Send(new GetCACertQuery(request.CaCertId), ctoken);
         if (cert == null)
@@ -33,7 +31,7 @@ public class GetCACertFileStreamHandler : CertmanHandler<GetCACertFileStreamQuer
         }
         
         var file = request.fileFunc(cert);
-        var filePath = Path.Combine(Config["Store"], file).ThrowIfFileNotExists();
+        var filePath = Path.Combine(_config["Store"], file).ThrowIfFileNotExists();
         var stream = System.IO.File.OpenRead(filePath);
         return (file, stream);
     }

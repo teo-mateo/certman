@@ -12,6 +12,7 @@ public record GetCACertQuery(int Id) : IRequest<CACert?>;
 
 public class GetCACertQueryHandler : CertmanHandler<GetCACertQuery, CACert?>
 {
+
     public GetCACertQueryHandler(IConfiguration config) : base(config) { }
 
     protected override async Task<CACert?> ExecuteAsync(GetCACertQuery request, CancellationToken ctoken)
@@ -32,4 +33,5 @@ public class GetCACertQueryHandler : CertmanHandler<GetCACertQuery, CACert?>
         
         return caCert;
     }
+
 } 

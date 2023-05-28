@@ -71,7 +71,7 @@ function CreateLeafCertModal({ caCertId, onCreated }) {
             validationErrorsState.dnsNames ||
             validationErrorsState.ipAddresses;
 
-        console.log("isFormInvalid", "validationErrorsState", validationErrorsState, "result", result);
+        console.log("isFormInvalid()", "validationErrorsState", validationErrorsState, "result", result);
         return result;
     }
 

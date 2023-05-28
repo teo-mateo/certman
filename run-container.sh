@@ -5,4 +5,4 @@ docker run -it --rm \
 -p 5051:5051 \
 -v ~/certmandata:/certman/data \
 -w /certman/app \
-certman-backend
+certman

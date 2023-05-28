@@ -19,7 +19,7 @@ public class RecreateDbTablesCommandHandler : CertmanHandler<RecreateDbTablesCom
     
     private void DeleteDbIfExists()
     {
-        var connectionString = Config.GetConnectionString();
+        var connectionString = _config.GetConnectionString();
         var builder = new SqliteConnectionStringBuilder(connectionString);
         var databaseFile = builder.DataSource;
         if (File.Exists(databaseFile))

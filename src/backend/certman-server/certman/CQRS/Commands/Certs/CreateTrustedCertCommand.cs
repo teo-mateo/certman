@@ -61,8 +61,8 @@ public class CreateLeafCertCommandHandler : CertmanHandler<CreateLeafCertCommand
             request.Dto.Name,
             keyFileCA,
             pemFileCA,
-            Path.Combine(Config["Workdir"], csrFile),
-            Path.Combine(Config["Workdir"], extFile));
+            Path.Combine(_config["Workdir"], csrFile),
+            Path.Combine(_config["Workdir"], extFile));
 
         var pfxFile = await _ssl.BundleSelfSignedCert(request.Dto.Name, keyFile, crtFile, request.Dto.Password);
 
@@ -118,15 +118,15 @@ public class CreateLeafCertCommandHandler : CertmanHandler<CreateLeafCertCommand
     
     private void MoveFromWorkdirToStore(string file)
     {
-        var source = Path.Combine(Config["Workdir"], file).ThrowIfFileNotExists();
-        var dest = Path.Combine(Config["Store"], file).ThrowIfFileExists();
+        var source = Path.Combine(_config["Workdir"], file).ThrowIfFileNotExists();
+        var dest = Path.Combine(_config["Store"], file).ThrowIfFileExists();
         File.Move(source, dest);
     }
 
     private string CopyFromStoreToWorkdir(string file)
     {
-        var source = Path.Combine(Config["Store"], file).ThrowIfFileNotExists();
-        var dest = Path.Combine(Config["Workdir"], file).ThrowIfFileExists();
+        var source = Path.Combine(_config["Store"], file).ThrowIfFileNotExists();
+        var dest = Path.Combine(_config["Workdir"], file).ThrowIfFileExists();
         File.Copy(source, dest);
         return dest;
     }

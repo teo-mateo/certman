@@ -1,7 +1,7 @@
-const BASE_URL = "http://localhost:5050";
+const BASE_URL = "https://localhost:5011";
 
 const getVersion = async () => {
-    const response = await fetch(`${BASE_URL}/system/version`);
+    const response = await fetch(`${BASE_URL}/api/system/version`);
     if (!response.ok) {
         throw new Error('Error fetching server version');
     }
@@ -121,6 +121,15 @@ const createLeafCert = async (caCertId, payload) => {
     return data;
 };
 
+const getSystemInfo = async () => {
+    const response = await fetch(`${BASE_URL}/api/system/info`);
+    if (!response.ok) {
+        throw new Error('Error fetching system info');
+    }
+    const data = await response.json();
+    return data;
+}
+
 const apiService = {
     getVersion,
     getCACerts,
@@ -133,7 +142,8 @@ const apiService = {
     getCACertDetails,
     deleteCACert,
     deleteCert,
-    createLeafCert
+    createLeafCert,
+    getSystemInfo
 };
 
 export default apiService;

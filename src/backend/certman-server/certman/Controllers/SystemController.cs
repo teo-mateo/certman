@@ -1,16 +1,18 @@
-﻿using certman.Extensions;
+﻿using certman.CQRS.Queries;
+using certman.Extensions;
+using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
 namespace certman.Controllers;
 
 //ServerController class deriving from ControllerBase, with one action GET /server/version that returns the string "1.0" not a Delegate
-[Route("[controller]")]
+[Route("api/[controller]")]
 public class SystemController : ControllerBase
 {
-    private readonly IConfiguration _config;
-    public SystemController(IConfiguration config)
+    private readonly IMediator _mediator;
+    public SystemController(IMediator mediator)
     {
-        _config = config;
+        _mediator = mediator;
     }
     
     [HttpGet("version")]
@@ -24,16 +26,31 @@ public class SystemController : ControllerBase
     }
 
     [HttpGet("info")]
-    public IActionResult GetSystemInfo()
+    public async Task<IActionResult> GetSystemInfo()
     {
-        object info = new
-        {
-            ConnectionString = _config.GetConnectionString(),
-            Workdir = _config["Workdir"],
-            Store = _config["Store"],
-            Database = _config["Database"],
-        };
+        var settings = await _mediator.Send(new GetSettingsQuery());
 
-        return new JsonResult(info);
+        // only keep following keys
+        var keys = new[]
+        {
+            "Database",
+            "Store",
+            "Workdir",
+            "WEBROOT",
+            "OpenSSLExecutable",
+            "ENVIRONMENT",
+            "applicationName",
+            "AllowedHosts"
+        };
+        
+        settings = settings.Where(x => keys.Contains(x.Key)).ToDictionary(x => x.Key, x => x.Value);
+        return new JsonResult(settings);
+    }
+    
+    [HttpGet("all-settings")]
+    public async Task<IActionResult> GetAllSettings()
+    {
+        var settings = await _mediator.Send(new GetSettingsQuery());
+        return new JsonResult(settings);
     }
 }

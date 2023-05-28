@@ -12,6 +12,10 @@ const App = () => {
             <div className="container">
                 <Header/>
                 <Router>
+                    <Routes>
+                        <Route path="/" element={<Navigate to="/certificates" />} />
+                        <Route path="/index.html" element={<Navigate to="/certificates" />} />
+                    </Routes>
                     <div className="columns">
                         <LeftNavigation />
                         <div className="column">

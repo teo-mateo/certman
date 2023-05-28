@@ -10,7 +10,7 @@ public class ClearWorkdirCommandHandler : CertmanHandler<ClearWorkdirCommand, Un
 
     protected override Task<Unit> ExecuteAsync(ClearWorkdirCommand request, CancellationToken ctoken)
     {
-        foreach (var file in Directory.GetFiles(Config["Workdir"]))
+        foreach (var file in Directory.GetFiles(_config["Workdir"]))
         {
             File.Delete(file);
         }

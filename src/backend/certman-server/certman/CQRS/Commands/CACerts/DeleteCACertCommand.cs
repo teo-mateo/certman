@@ -24,8 +24,8 @@ public class DeleteCACertCommandHandler : CertmanHandler<DeleteCACertCommand, Un
             return Unit.Value;
         
         // delete all files of the CA cert (CACert class) from the store
-        File.Delete(Path.Combine(Config["Store"], caCert.Pemfile));
-        File.Delete(Path.Combine(Config["Store"], caCert.Keyfile));
+        File.Delete(Path.Combine(_config["Store"], caCert.Pemfile));
+        File.Delete(Path.Combine(_config["Store"], caCert.Keyfile));
 
         foreach (var cert in caCert.Certs)
         {

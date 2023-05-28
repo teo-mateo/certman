@@ -6,8 +6,12 @@ import DownloadButton from "../components/DownloadButton";
 
 const CACertificateDetails = () => {
 
+    console.log('CACertificateDetails component');
+
     const [details, setDetails] = useState(null);
     const { id } = useParams();
+
+    console.log('CACertificateDetails id:', id);
 
     const deleteCert = (caCertId, certId) => {
         if (window.confirm('Are you sure you want to delete this certificate?')) {
@@ -17,11 +21,18 @@ const CACertificateDetails = () => {
         }
     };
 
-    useEffect(() => fetchDetails, [id]);
+    useEffect(() => {
+        fetchDetails();
+    }, []);
 
     const fetchDetails = () => {
+        console.log('fetching details');
         apiService.getCACertDetails(id)
-            .then(data => setDetails(data))
+            .then(data => {
+                console.log('fetched details', data);
+                setDetails(data);
+
+            })
             .catch(error => console.error('Error:', error));
     };
 

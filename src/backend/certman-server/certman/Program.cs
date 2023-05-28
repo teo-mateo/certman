@@ -3,8 +3,6 @@ using certman.CQRS.Commands.Startup;
 using certman.Extensions;
 using certman.Services;
 using MediatR;
-using Microsoft.AspNetCore.Hosting.Server;
-using Microsoft.AspNetCore.Hosting.Server.Features;
 
 Directory.SetCurrentDirectory(AppContext.BaseDirectory);
 
@@ -50,6 +48,7 @@ app.Services.GetRequiredService<IHostApplicationLifetime>()
     .ApplicationStarted
     .Register(() =>
     {
+        app.Logger.LogInformation("Webroot: {Webroot}", app.Environment.WebRootPath);
         var mediator = app.Services.GetRequiredService<IMediator>();
         mediator.Send(new EnsureDatabaseExistsCommand()).GetAwaiter().GetResult();
         mediator.Send(new EnsureDataDirsExistCommand()).GetAwaiter().GetResult();
@@ -64,7 +63,11 @@ app.UseSwaggerEx();
 // enable cors, all origins, all methods, all headers
 app.UseCors(c => c.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
 
+app.UseStaticFiles();
+app.MapFallbackToFile("index.html");
+
 app.MapControllers();
+
 
 try
 {

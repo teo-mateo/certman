@@ -9,8 +9,7 @@ const CertificatesPage = () => {
             <h1 className="title">Certificates</h1>
             <Routes>
                 <Route path="/" element={<CACertificatesList />} />
-                <Route path=":id" element={<CACertificateDetails />} />
-
+                <Route path="/:id" element={<CACertificateDetails />} />
             </Routes>
         </div>
     );

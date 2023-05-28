@@ -31,8 +31,8 @@ public class PruneCACertsCommandHandler : CertmanHandler<PruneCACertsCommand, Un
     /// </summary>
     private async Task PruneCACert(CACert cert)
     {
-        var keyFile = Path.Combine(Config["Store"], cert.Keyfile);
-        var pemFile = Path.Combine(Config["Store"], cert.Pemfile);
+        var keyFile = Path.Combine(_config["Store"], cert.Keyfile);
+        var pemFile = Path.Combine(_config["Store"], cert.Pemfile);
         if (File.Exists(keyFile) && File.Exists(pemFile))
         {
             return;
