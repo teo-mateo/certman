@@ -1,8 +1,10 @@
 FROM ubuntu:latest
 
-# Install openssl
+# Install openssl and aspnetcore-runtime-6.0
 RUN apt-get update && apt-get install -y openssl aspnetcore-runtime-6.0
 
+# Install curl
+RUN apt-get update && apt-get install -y curl
 
 RUN mkdir /certman
 RUN mkdir /certman/app
@@ -22,7 +24,11 @@ COPY ./src/frontend/certman-ui/build /certman/webroot
 # Set environment variables
 # ASPNETCORE_WEBROOT is the path to the webroot folder
 
-ENV ASPNETCORE_WEBROOT=/certman/webroot
+# Copy environment variables file and source it
+COPY ./.env /certman
+
+# Copy entrypoint script
+COPY ./entrypoint.sh /certman
 
 EXPOSE 5050
 EXPOSE 5051
@@ -30,4 +36,4 @@ EXPOSE 5051
 WORKDIR /certman/app
 
 # Run the app
-CMD ["/certman/app/certman"]
+CMD ["/certman/entrypoint.sh"]

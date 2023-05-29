@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env bash
+#!/usr/bin/bash
 
 #kill container if it's running
 docker kill certman_app
@@ -18,4 +18,5 @@ docker run -d \
 -v ~/certmandata:/certman/data \
 -w /certman/app \
 --name certman_app \
+--env-file .env \
 certman
