@@ -43,8 +43,8 @@ public class SystemController : ControllerBase
             "AllowedHosts"
         };
         
-        settings = settings.Where(x => keys.Contains(x.Key)).ToDictionary(x => x.Key, x => x.Value);
-        return new JsonResult(settings);
+        var settings2 = settings.Where(x => keys.Contains(x.Key)).ToDictionary(x => x.Key, x => x.Value);
+        return new JsonResult(settings2);
     }
     
     [HttpGet("all-settings")]
