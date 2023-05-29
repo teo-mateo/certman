@@ -1,4 +1,4 @@
-const BASE_URL = "https://localhost:5011";
+const BASE_URL = process.env.REACT_APP_SERVER_URL;
 
 const getVersion = async () => {
     const response = await fetch(`${BASE_URL}/api/system/version`);
