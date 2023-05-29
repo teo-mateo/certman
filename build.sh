@@ -32,7 +32,16 @@ mv ./bin/Release/net6.0/linux-x64/publish/appsettings.dockerlinux.json ./bin/Rel
 
 # Build the frontend
 cd $BUILD_ROOT/src/frontend/certman-ui || exit 1
-npm install || exit 1
+
+# if first argument is 'dev' run build:dev else run build
+if [ "$1" = "dev" ]; then
+    echo "Building the frontend in dev mode..."
+    npm run build:dev || exit 1
+else
+    echo "Building the frontend..."
+    npm run build:prod || exit 1
+fi
+
 npm run build || exit 1
 
 cd $BUILD_ROOT
