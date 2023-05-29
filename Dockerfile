@@ -29,6 +29,7 @@ COPY ./.env /certman
 
 # Copy entrypoint script
 COPY ./entrypoint.sh /certman
+RUN chmod +x /certman/entrypoint.sh
 
 EXPOSE 5050
 EXPOSE 5051
