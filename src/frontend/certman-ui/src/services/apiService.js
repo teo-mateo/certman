@@ -2,7 +2,7 @@ const getBaseUrl = () => {
 
     let baseUrl = process.env.NODE_ENV === 'development'
         ? process.env.REACT_APP_SERVER_URL
-        : window.location.hostname;
+        : `https://${window.location.hostname}:5051`;
 
     console.log(`Using base URL: ${baseUrl}`);
     return baseUrl;
