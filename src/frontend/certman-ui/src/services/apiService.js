@@ -1,6 +1,6 @@
 const BASE_URL = process.env.REACT_APP_SERVER_URL;
 
-const logIfDeveloptment = (message) => {
+const logIfDevelopment = (message) => {
     if (process.env.NODE_ENV === 'development') {
         console.log(message);
     }
@@ -12,7 +12,7 @@ const getVersion = async () => {
         throw new Error('Error fetching server version');
     }
     const data = await response.json();
-    logIfDeveloptment(data);
+    logIfDevelopment(data);
     return data.version;
 };
 
@@ -22,7 +22,7 @@ const getCACerts = async () => {
         throw new Error('Error fetching CA certificates');
     }
     const data = await response.json();
-    logIfDeveloptment(data);
+    logIfDevelopment(data);
     return data;
 };
 
@@ -32,7 +32,7 @@ const getKeyfile = async (caCertId) => {
         throw new Error(`Error fetching keyfile for cert ID: ${caCertId}`);
     }
     const data = await response.blob();
-    logIfDeveloptment(data);
+    logIfDevelopment(data);
     return data;
 };
 
@@ -42,7 +42,7 @@ const getPemfile = async (caCertId) => {
         throw new Error(`Error fetching pemfile for cert ID: ${caCertId}`);
     }
     const data = await response.blob();
-    logIfDeveloptment(data);
+    logIfDevelopment(data);
     return data;
 };
 
@@ -52,7 +52,7 @@ const downloadLeafCertPfxFile = async (caCertId, id) => {
         throw new Error(`Error fetching pfxfile for cert ID: ${id}`);
     }
     const data = await response.blob();
-    logIfDeveloptment(data);
+    logIfDevelopment(data);
     return data;
 }
 
@@ -62,7 +62,7 @@ const downloadLeafCertCrtFile = async (caCertId, id) => {
         throw new Error(`Error fetching crtfile for cert ID: ${id}`);
     }
     const data = await response.blob();
-    logIfDeveloptment(data);
+    logIfDevelopment(data);
     return data;
 }
 
@@ -73,7 +73,7 @@ const downloadLeafCertKeyFile = async (caCertId, id) => {
         throw new Error(`Error fetching keyfile for cert ID: ${id}`);
     }
     const data = await response.blob();
-    logIfDeveloptment(data);
+    logIfDevelopment(data);
     return data;
 }
 
@@ -91,7 +91,7 @@ const createCACert = async (payload) => {
     }
 
     const data = await response.json();
-    logIfDeveloptment(data);
+    logIfDevelopment(data);
     return data;
 };
 
@@ -101,7 +101,7 @@ const getCACertDetails = async (id) => {
         throw new Error(`Error fetching CA Cert details with id ${id}`);
     }
     const data = await response.json();
-    logIfDeveloptment(data);
+    logIfDevelopment(data);
     return data;
 };
 
@@ -131,7 +131,7 @@ const createLeafCert = async (caCertId, payload) => {
         throw new Error('Error creating leaf certificate');
     }
     const data = await response.json();
-    logIfDeveloptment(data);
+    logIfDevelopment(data);
     return data;
 };
 
@@ -141,7 +141,7 @@ const getSystemInfo = async () => {
         throw new Error('Error fetching system info');
     }
     const data = await response.json();
-    logIfDeveloptment(data);
+    logIfDevelopment(data);
     return data;
 }
 
