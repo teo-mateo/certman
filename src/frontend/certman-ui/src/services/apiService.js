@@ -1,12 +1,4 @@
-const getBaseUrl = () => {
-
-    let baseUrl = process.env.NODE_ENV === 'development'
-        ? process.env.REACT_APP_SERVER_URL
-        : `https://${window.location.hostname}:5051`;
-
-    console.log(`Using base URL: ${baseUrl}`);
-    return baseUrl;
-}
+const BASE_URL = process.env.REACT_APP_SERVER_URL;
 
 const logIfDeveloptment = (message) => {
     if (process.env.NODE_ENV === 'development') {
@@ -15,7 +7,7 @@ const logIfDeveloptment = (message) => {
 }
 
 const getVersion = async () => {
-    const response = await fetch(`${getBaseUrl()}/api/system/version`);
+    const response = await fetch(`${BASE_URL}/api/system/version`);
     if (!response.ok) {
         throw new Error('Error fetching server version');
     }
@@ -25,7 +17,7 @@ const getVersion = async () => {
 };
 
 const getCACerts = async () => {
-    const response = await fetch(`${getBaseUrl()}/api/certs/ca-certs`);
+    const response = await fetch(`${BASE_URL}/api/certs/ca-certs`);
     if (!response.ok) {
         throw new Error('Error fetching CA certificates');
     }
@@ -35,7 +27,7 @@ const getCACerts = async () => {
 };
 
 const getKeyfile = async (caCertId) => {
-    const response = await fetch(`${getBaseUrl()}/api/certs/ca-certs/${caCertId}/keyfile`);
+    const response = await fetch(`${BASE_URL}/api/certs/ca-certs/${caCertId}/keyfile`);
     if (!response.ok) {
         throw new Error(`Error fetching keyfile for cert ID: ${caCertId}`);
     }
@@ -45,7 +37,7 @@ const getKeyfile = async (caCertId) => {
 };
 
 const getPemfile = async (caCertId) => {
-    const response = await fetch(`${getBaseUrl()}/api/certs/ca-certs/${caCertId}/pemfile`);
+    const response = await fetch(`${BASE_URL}/api/certs/ca-certs/${caCertId}/pemfile`);
     if (!response.ok) {
         throw new Error(`Error fetching pemfile for cert ID: ${caCertId}`);
     }
@@ -55,7 +47,7 @@ const getPemfile = async (caCertId) => {
 };
 
 const downloadLeafCertPfxFile = async (caCertId, id) => {
-    const response = await fetch(`${getBaseUrl()}/api/certs/ca-certs/${caCertId}/certs/${id}/pfxfile`);
+    const response = await fetch(`${BASE_URL}/api/certs/ca-certs/${caCertId}/certs/${id}/pfxfile`);
     if (!response.ok) {
         throw new Error(`Error fetching pfxfile for cert ID: ${id}`);
     }
@@ -65,7 +57,7 @@ const downloadLeafCertPfxFile = async (caCertId, id) => {
 }
 
 const downloadLeafCertCrtFile = async (caCertId, id) => {
-    const response = await fetch(`${getBaseUrl()}/api/certs/ca-certs/${caCertId}/certs/${id}/crtfile`);
+    const response = await fetch(`${BASE_URL}/api/certs/ca-certs/${caCertId}/certs/${id}/crtfile`);
     if (!response.ok) {
         throw new Error(`Error fetching crtfile for cert ID: ${id}`);
     }
@@ -76,7 +68,7 @@ const downloadLeafCertCrtFile = async (caCertId, id) => {
 
 // getLeafCertKeyfile
 const downloadLeafCertKeyFile = async (caCertId, id) => {
-    const response = await fetch(`${getBaseUrl()}/api/certs/ca-certs/${caCertId}/certs/${id}/keyfile`);
+    const response = await fetch(`${BASE_URL}/api/certs/ca-certs/${caCertId}/certs/${id}/keyfile`);
     if (!response.ok) {
         throw new Error(`Error fetching keyfile for cert ID: ${id}`);
     }
@@ -86,7 +78,7 @@ const downloadLeafCertKeyFile = async (caCertId, id) => {
 }
 
 const createCACert = async (payload) => {
-    const response = await fetch(`${getBaseUrl()}/api/certs/ca-certs`, {
+    const response = await fetch(`${BASE_URL}/api/certs/ca-certs`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -104,7 +96,7 @@ const createCACert = async (payload) => {
 };
 
 const getCACertDetails = async (id) => {
-    const response = await fetch(`${getBaseUrl()}/api/certs/ca-certs/${id}`);
+    const response = await fetch(`${BASE_URL}/api/certs/ca-certs/${id}`);
     if (!response.ok) {
         throw new Error(`Error fetching CA Cert details with id ${id}`);
     }
@@ -114,21 +106,21 @@ const getCACertDetails = async (id) => {
 };
 
 const deleteCert = async (caCertId, certId) => {
-    const response = await fetch(`${getBaseUrl()}/api/certs/ca-certs/${caCertId}/certs/${certId}`, { method: 'DELETE' });
+    const response = await fetch(`${BASE_URL}/api/certs/ca-certs/${caCertId}/certs/${certId}`, { method: 'DELETE' });
     if (!response.ok) {
         throw new Error(`Error deleting Cert with id ${certId}`);
     }
 };
 
 const deleteCACert = async (id) => {
-    const response = await fetch(`${getBaseUrl()}/api/certs/ca-certs/${id}`, { method: 'DELETE' });
+    const response = await fetch(`${BASE_URL}/api/certs/ca-certs/${id}`, { method: 'DELETE' });
     if (!response.ok) {
         throw new Error(`Error deleting CA Cert with id ${id}`);
     }
 }
 
 const createLeafCert = async (caCertId, payload) => {
-    const response = await fetch(`${getBaseUrl()}/api/certs/ca-certs/${caCertId}/certs`, {
+    const response = await fetch(`${BASE_URL}/api/certs/ca-certs/${caCertId}/certs`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -144,7 +136,7 @@ const createLeafCert = async (caCertId, payload) => {
 };
 
 const getSystemInfo = async () => {
-    const response = await fetch(`${getBaseUrl()}/api/system/info`);
+    const response = await fetch(`${BASE_URL}/api/system/info`);
     if (!response.ok) {
         throw new Error('Error fetching system info');
     }
