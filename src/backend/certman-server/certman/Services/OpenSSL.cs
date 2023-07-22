@@ -1,12 +1,11 @@
 ﻿using System.Diagnostics;
 using System.Text;
-using certman.Extensions;
+using Heapzilla.Common.Filesystem;
 
 namespace certman.Services;
 
 public class OpenSSL: IOpenSSL
 {
-    //ILogger
     private readonly ILogger<OpenSSL> _logger;
     private readonly string _opensslExecutable;
     private readonly string _workdir;
@@ -83,8 +82,7 @@ public class OpenSSL: IOpenSSL
         var outputKeyFile = Path.Combine(_workdir, $"{name}.key").ThrowIfFileExists();
         var outputCsrFile = Path.Combine(_workdir, $"{name}.csr").ThrowIfFileExists();
 
-        await RunOpenSSLCommand(
-            "req", "-new", "-newkey", "rsa:2048", "-nodes", "-keyout", outputKeyFile, "-out", outputCsrFile, "-config", inputCnfFile);
+        await RunOpenSSLCommand("req", "-new", "-newkey", "rsa:2048", "-nodes", "-keyout", outputKeyFile, "-out", outputCsrFile, "-config", inputCnfFile);
 
         return (
             keyFile: $"{name}.key", 
@@ -126,8 +124,7 @@ public class OpenSSL: IOpenSSL
         var inputCsrFile = Path.Combine(_workdir, csrFile).ThrowIfFileNotExists();
         var inputExtFile = Path.Combine(_workdir, extFile).ThrowIfFileNotExists();
         var outputCrtFile = Path.Combine(_workdir, $"{name}.crt").ThrowIfFileExists();
-        await RunOpenSSLCommand(
-            "x509", "-req", "-in", inputCsrFile, "-CA", inputPemFileCA, "-CAkey", inputKeyFileCA, "-CAcreateserial", "-out", outputCrtFile, "-days", "365", "-sha256", "-extfile", inputExtFile);
+        await RunOpenSSLCommand("x509", "-req", "-in", inputCsrFile, "-CA", inputPemFileCA, "-CAkey", inputKeyFileCA, "-CAcreateserial", "-out", outputCrtFile, "-days", "365", "-sha256", "-extfile", inputExtFile);
         return $"{name}.crt";
     }
 
@@ -142,14 +139,7 @@ public class OpenSSL: IOpenSSL
             "pkcs12", "-export", "-out", outputPfxFile, "-inkey", inputKeyFile, "-in", inputCrtFile, "-passout", $"pass:{password}");
         return $"{name}.pfx";
     }
-
-    [Obsolete]
-    private async Task RunOpenSSLCommand(string arguments)
-    {
-        var startInfo = CreateStartInfo(arguments);
-        await RunOpenSSLCommand(startInfo);
-    }
-
+    
     private async Task RunOpenSSLCommand(params string[] arguments)
     {
         var startInfo = CreateStartInfo(arguments);
@@ -176,16 +166,6 @@ public class OpenSSL: IOpenSSL
         
         await process.WaitForExitAsync();
         process.ThrowIfBadExit(error);        
-    }
-
-    private ProcessStartInfo CreateStartInfo(string arguments)
-    {
-        return new ProcessStartInfo(_opensslExecutable, arguments)
-        {
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            UseShellExecute = false
-        };
     }
 
     private ProcessStartInfo CreateStartInfo(IEnumerable<string> arguments)

@@ -2,10 +2,10 @@
 using certman.Controllers.Dto;
 using certman.CQRS.Commands.Storage;
 using certman.CQRS.Queries;
-using certman.Extensions;
 using certman.Models;
 using certman.Services;
 using Dapper;
+using Heapzilla.Common.Filesystem;
 using MediatR;
 
 namespace certman.CQRS.Commands.Certs;

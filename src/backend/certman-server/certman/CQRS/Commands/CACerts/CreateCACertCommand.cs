@@ -4,6 +4,7 @@ using certman.Extensions;
 using certman.Models;
 using certman.Services;
 using Dapper;
+using Heapzilla.Common.Filesystem;
 using MediatR;
 using Microsoft.Data.Sqlite;
 
