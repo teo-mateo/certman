@@ -25,7 +25,7 @@ public class CertsController : CertmanController
     /// Creates a new CA Certificate
     /// </summary>
     [HttpPost("ca-certs")]
-    public async Task<ActionResult> CreateCACert([FromBody] CreateCACertDto dto)
+    public async Task<IActionResult> CreateCACert([FromBody] CreateCACertDto dto)
     {
         _logger.LogInformation("Creating CA Cert: {DtoName}", dto.Name);
         
@@ -36,7 +36,7 @@ public class CertsController : CertmanController
         }
 
         var result = await _mediator.Send(new CreateCACertCommand(dto));
-        return new JsonResult(result);
+        return Ok(result);
     }
     
     /// <summary>
@@ -144,14 +144,13 @@ public class CertsController : CertmanController
         
         var cert = await _mediator.Send(new CreateLeafCertCommand(id, dto));
         return Ok(cert);
-        
     }
 
     /// <summary>
     /// Deletes a leaf cert and all its files
     /// </summary>
     [HttpDelete("ca-certs/{caCertId}/certs/{id}")]
-    public async Task<IActionResult> GetLeafCert(int caCertId, int id)
+    public async Task<IActionResult> DeleteLeafCert(int caCertId, int id)
     {
         _logger.LogInformation("Deleting Leaf Cert: {Id}", id);
         
@@ -171,5 +170,4 @@ public class CertsController : CertmanController
         return Ok();
     }
     
-
 }
