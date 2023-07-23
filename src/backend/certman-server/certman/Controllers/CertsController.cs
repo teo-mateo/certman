@@ -1,10 +1,8 @@
 ﻿using certman.Controllers.Dto;
-using certman.CQRS.Commands;
 using certman.CQRS.Commands.CACerts;
 using certman.CQRS.Commands.Certs;
 using certman.CQRS.Queries;
-using certman.Extensions;
-using certman.Models;
+using Heapzilla.Common.AspNetCore;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
@@ -27,14 +25,14 @@ public class CertsController : CertmanController
     /// Creates a new CA Certificate
     /// </summary>
     [HttpPost("ca-certs")]
-    public async Task<JsonResult> CreateCACert([FromBody] CreateCACertDto dto)
+    public async Task<ActionResult> CreateCACert([FromBody] CreateCACertDto dto)
     {
         _logger.LogInformation("Creating CA Cert: {DtoName}", dto.Name);
         
         if (!ModelState.IsValid)
         {
             // return error and all ModelState errors
-            return new JsonResult(ModelState.GetErrorMessages());
+            return BadRequest(ModelState.GetErrorMessages());
         }
 
         var result = await _mediator.Send(new CreateCACertCommand(dto));
