@@ -1,3 +1,7 @@
 #!/bin/bash
 
-docker save certman | bzip2 | pv | ssh heapzilla@192.168.2.77 docker load 
+docker save -o certman.tar certman || exit 1
+bzip2 certman.tar || exit 1
+
+# scp to heapzilla@netstorage.gogu
+scp certman.tar.bz2 heapzilla@netstorage.gogu:/volume1/docker/apps/certman
