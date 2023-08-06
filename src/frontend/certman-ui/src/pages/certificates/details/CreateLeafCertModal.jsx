@@ -3,33 +3,46 @@ import apiService from '../../../services/apiService';
 import DnsNamesInput from "./DnsNamesInput";
 import IpAddressesInput from "./IpAddressesInput";
 
+const defaultFormData = {
+    name: '',
+    password: '',
+    country: 'BE',
+    state: 'Flanders',
+    locality: 'Tienen',
+    organization: 'Heapzilla',
+    organizationUnit: 'Rubenshof20',
+    commonName: '',
+    dnsNames: [],
+    ipAddresses: []
+};
+
+const defaultValidationErrorsState = {
+    name: false,
+    password: false,
+    country: false,
+    state: false,
+    locality: false,
+    organization: false,
+    organizationUnit: false,
+    commonName: false,
+    dnsNames: false,
+    ipAddresses: false
+}
+
 function CreateLeafCertModal({ caCertId, onCreated }) {
     const [showModal, setShowModal] = useState(false);
-    const [formData, setFormData] = useState({
-        name: '',
-        password: '',
-        country: 'BE',
-        state: 'Flanders',
-        locality: 'Tienen',
-        organization: 'Heapzilla',
-        organizationUnit: 'Rubenshof20',
-        commonName: '',
-        dnsNames: [],
-        ipAddresses: []
-    });
+    const [formData, setFormData] = useState(defaultFormData);
 
-    const [validationErrorsState, setValidationErrorsState] = useState({
-        name: false,
-        password: false,
-        country: false,
-        state: false,
-        locality: false,
-        organization: false,
-        organizationUnit: false,
-        commonName: false,
-        dnsNames: false,
-        ipAddresses: false
-    });
+    // reset state when modal is closed
+    useEffect(() => {
+        if (!showModal) {
+            setFormData(defaultFormData);
+            setValidationErrorsState(defaultValidationErrorsState);
+        }
+    }, [showModal]);
+
+
+    const [validationErrorsState, setValidationErrorsState] = useState(defaultValidationErrorsState);
 
     const validate = () => {
 
