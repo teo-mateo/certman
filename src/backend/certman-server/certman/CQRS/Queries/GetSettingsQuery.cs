@@ -20,7 +20,7 @@ public class GetSettingsQueryHandler : CertmanHandler<GetSettingsQuery, Settings
             settings.Add(key, value);
         }
         
-        settings.add("IMAGE_VERSION", Environment.GetEnvironmentVariable("IMAGE_VERSION") ?? "Unknown");
+        settings.Add("IMAGE_VERSION", Environment.GetEnvironmentVariable("IMAGE_VERSION") ?? "Unknown");
 
         return Task.FromResult(settings);
     }
