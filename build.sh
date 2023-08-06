@@ -44,4 +44,9 @@ fi
 
 cd $BUILD_ROOT
 
-docker build . -t certman || exit 1
+current_version=$(docker images | grep certman | awk '{print $2}' | sort -n | tail -1)
+new_version=$((current_version + 1))
+echo "Current version: $current_version"
+echo "New version: $new_version"
+
+docker build --build-arg VERSION=$new_version -t certman:$new_version . || exit 1

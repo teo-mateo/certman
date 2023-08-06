@@ -39,5 +39,8 @@ EXPOSE 5051
 
 WORKDIR /certman/app
 
+ARG VERSION=latest
+ENV IMAGE_VERSION=$VERSION
+
 # Run the app
 CMD ["/certman/entrypoint.sh"]
