@@ -40,7 +40,8 @@ public class SystemController : ControllerBase
             "OpenSSLExecutable",
             "ENVIRONMENT",
             "applicationName",
-            "AllowedHosts"
+            "AllowedHosts",
+            "IMAGE_VERSION"
         };
         
         var settings2 = settings.Where(x => keys.Contains(x.Key)).ToDictionary(x => x.Key, x => x.Value);
