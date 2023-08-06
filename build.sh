@@ -46,4 +46,6 @@ cd $BUILD_ROOT
 
 docker build . -t certman || exit 1
 docker tag certman teomateo/certman:latest || exit 1
-docker push teomateo/certman:latest || exit 1
+#docker push teomateo/certman:latest || exit 1
+
+docker save -o certman.tar certman || exit 1
