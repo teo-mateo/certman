@@ -18,6 +18,9 @@ RUN mkdir /certman/webroot
 # copy all files and directories from the publish folder (./certman/bin/Release/net6.0/publish) to the app folder (/app), excluding any files that start with appsettings
 COPY ./src/backend/certman-server/certman/bin/Release/net6.0/linux-x64/publish /certman/app
 
+# copy Certman-prod.pfx to the app folder (/certman/app) and rename it to Certman.pfx
+COPY ./certificate/Certman-prod.pfx /certman/app/Certman.pfx
+
 # copy all files from the frontend build folder (./certman/src/frontend/certman-client/dist) to the webroot folder (/certman/webroot)
 COPY ./src/frontend/certman-ui/build /certman/webroot
 
