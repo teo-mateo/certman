@@ -1,6 +1,6 @@
-﻿using certman.Extensions;
-using certman.Services;
+﻿using certman.Services;
 using FluentAssertions;
+using Heapzilla.Common.Filesystem;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Moq;
@@ -82,7 +82,7 @@ public class OpenSSLTests
     [InlineData("this is a test")]
     public async Task OpenSSL_CreateExtFile_Test(string name)
     {
-        var result = await _openSSL.CreateExtFile(name, 
+        await _openSSL.CreateExtFile(name, 
             new[] { "test1.com", "test2.com" },
             new[] { "192.168.1.1", "192.168.1.2" });
         

@@ -1,0 +1,43 @@
+Index: build.sh
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>#!/bin/bash\r\n\r\n#echo the commands \r\nset -x\r\n\r\n# Build script for the project\r\n\r\n# Clean the project\r\necho \"Cleaning the project...\"\r\ndotnet clean || exit 1\r\n\r\n# Build the project\r\necho \"Building the project...\"\r\ncd certman || exit 1\r\n\r\ndotnet build || exit 1\r\n\r\n# Cleanup the publish folder\r\necho \"Cleaning the publish folder...\"\r\nrm -rf ./bin/Release/net6.0/linux-x64/publish/* || exit 1\r\n\r\n# publish in release mode, for linux, and exit if errors #/p:PublishTrimmed=true\r\ndotnet publish -c Release -r linux-x64 --self-contained true /p:PublishSingleFile=true || exit 1  \r\n\r\n#move appsettings.dockerlinux.json to appsettings.json\r\nrm ./bin/Release/net6.0/linux-x64/publish/appsettings.json\r\nmv ./bin/Release/net6.0/linux-x64/publish/appsettings.dockerlinux.json ./bin/Release/net6.0/linux-x64/publish/appsettings.json\r\n\r\ncd .. \r\ndocker build . -t certman-backend || exit 1
+===================================================================
+diff --git a/build.sh b/build.sh
+--- a/build.sh	
++++ b/build.sh	
+@@ -6,21 +6,30 @@
+ # Build script for the project
+ 
+ # Clean the project
+-echo "Cleaning the project..."
+-dotnet clean || exit 1
++# echo "Cleaning the project..."
++# dotnet clean || exit 1
+ 
+ # Build the project
+ echo "Building the project..."
+ cd certman || exit 1
+ 
+-dotnet build || exit 1
++# Get the current directory
++pwd
++
++# Restore the project
++echo "Restoring the project..."
++dotnet restore certman.csproj || exit 1
++
++# Build the project
++echo "Building the project..."
++dotnet build certman.csproj || exit 1
+ 
+ # Cleanup the publish folder
+ echo "Cleaning the publish folder..."
+ rm -rf ./bin/Release/net6.0/linux-x64/publish/* || exit 1
+ 
+ # publish in release mode, for linux, and exit if errors #/p:PublishTrimmed=true
+-dotnet publish -c Release -r linux-x64 --self-contained true /p:PublishSingleFile=true || exit 1  
++dotnet publish certman.csproj -c Release -r linux-x64 --self-contained true /p:PublishSingleFile=true || exit 1  
+ 
+ #move appsettings.dockerlinux.json to appsettings.json
+ rm ./bin/Release/net6.0/linux-x64/publish/appsettings.json

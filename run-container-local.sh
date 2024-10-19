@@ -19,4 +19,5 @@ docker run -d \
 -w /certman/app \
 --name certman_app \
 --env-file .env \
+-e REACT_APP_SERVER_URL=https://$(hostname -I | awk '{print $1}'):5051 \
 certman

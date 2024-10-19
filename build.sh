@@ -32,11 +32,21 @@ mv ./bin/Release/net6.0/linux-x64/publish/appsettings.dockerlinux.json ./bin/Rel
 
 # Build the frontend
 cd $BUILD_ROOT/src/frontend/certman-ui || exit 1
-npm install || exit 1
-npm run build || exit 1
+
+# if first argument is 'dev' run build:dev else run build
+if [ "$1" = "prod" ]; then
+    echo "Building the frontend in production mode..."
+    npm run build:prod || exit 1
+else
+    echo "Building the frontend in development mode..."
+    npm run build:dev || exit 1
+fi
 
 cd $BUILD_ROOT
 
-docker build . -t certman || exit 1
-docker tag certman teomateo/certman:latest || exit 1
-docker push teomateo/certman:latest || exit 1
+current_version=$(docker images | grep certman | awk '{print $2}' | sort -n | tail -1)
+new_version=$((current_version + 1))
+echo "Current version: $current_version"
+echo "New version: $new_version"
+
+docker build --build-arg VERSION=$new_version -t certman:$new_version . || exit 1

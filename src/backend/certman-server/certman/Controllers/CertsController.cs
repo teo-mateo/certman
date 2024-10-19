@@ -1,10 +1,8 @@
 ﻿using certman.Controllers.Dto;
-using certman.CQRS.Commands;
 using certman.CQRS.Commands.CACerts;
 using certman.CQRS.Commands.Certs;
 using certman.CQRS.Queries;
-using certman.Extensions;
-using certman.Models;
+using Heapzilla.Common.AspNetCore;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
@@ -27,18 +25,18 @@ public class CertsController : CertmanController
     /// Creates a new CA Certificate
     /// </summary>
     [HttpPost("ca-certs")]
-    public async Task<JsonResult> CreateCACert([FromBody] CreateCACertDto dto)
+    public async Task<IActionResult> CreateCACert([FromBody] CreateCACertDto dto)
     {
         _logger.LogInformation("Creating CA Cert: {DtoName}", dto.Name);
         
         if (!ModelState.IsValid)
         {
             // return error and all ModelState errors
-            return new JsonResult(ModelState.GetErrorMessages());
+            return BadRequest(ModelState.GetErrorMessages());
         }
 
         var result = await _mediator.Send(new CreateCACertCommand(dto));
-        return new JsonResult(result);
+        return Ok(result);
     }
     
     /// <summary>
@@ -146,14 +144,13 @@ public class CertsController : CertmanController
         
         var cert = await _mediator.Send(new CreateLeafCertCommand(id, dto));
         return Ok(cert);
-        
     }
 
     /// <summary>
     /// Deletes a leaf cert and all its files
     /// </summary>
     [HttpDelete("ca-certs/{caCertId}/certs/{id}")]
-    public async Task<IActionResult> GetLeafCert(int caCertId, int id)
+    public async Task<IActionResult> DeleteLeafCert(int caCertId, int id)
     {
         _logger.LogInformation("Deleting Leaf Cert: {Id}", id);
         
@@ -173,5 +170,4 @@ public class CertsController : CertmanController
         return Ok();
     }
     
-
 }
