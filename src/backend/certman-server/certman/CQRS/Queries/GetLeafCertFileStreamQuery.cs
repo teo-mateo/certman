@@ -9,30 +9,24 @@ public record GetLeafCertFileStreamQuery(
     int LeafCertId,
     Func<Cert, string> fileFunc) : IRequest<(string, FileStream)>;
 
-public class GetLeafCertFileStreamHandler : CertmanHandler<GetLeafCertFileStreamQuery, (string, FileStream)>
+public class GetLeafCertFileStreamHandler(
+    IConfiguration config,
+    IMediator mediator,
+    ILogger<GetLeafCertFileStreamQuery> logger)
+    : CertmanHandler<GetLeafCertFileStreamQuery, (string, FileStream)>(config, logger)
 {
-    private readonly IMediator _mediator;
-
-    public GetLeafCertFileStreamHandler(
-        IConfiguration config,
-        IMediator mediator,
-        ILogger<GetLeafCertFileStreamQuery> logger) : base(config, logger)
-    {
-        _mediator = mediator;
-    }
-
     protected override async Task<(string, FileStream)> ExecuteAsync(GetLeafCertFileStreamQuery request, CancellationToken ctoken)
     {
-        _logger?.LogInformation("Downloading Leaf Cert Pemfile: {Id}", request.LeafCertId);
+        logger?.LogInformation("Downloading Leaf Cert Pemfile: {Id}", request.LeafCertId);
         
-        var cert = await _mediator.Send(new GetLeafCertQuery(request.CaCertId, request.LeafCertId), ctoken);
+        var cert = await mediator.Send(new GetLeafCertQuery(request.CaCertId, request.LeafCertId), ctoken);
         if (cert == null)
         {
             throw new FileNotFoundException();
         }
         
         var file = request.fileFunc(cert);
-        var filePath = Path.Combine(_config["Store"], file).ThrowIfFileNotExists();
+        var filePath = Path.Combine(_config["Store"]!, file).ThrowIfFileNotExists();
         var stream = System.IO.File.OpenRead(filePath);
         return (file, stream);
     }

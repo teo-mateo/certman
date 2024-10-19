@@ -4,12 +4,9 @@ namespace certman.CQRS.Commands.Startup;
 
 public record EnsureCertificateExistsCommand : IRequest<Unit>;
 
-public class EnsureCertificateExistsHandler : CertmanHandler<EnsureCertificateExistsCommand, Unit>
+public class EnsureCertificateExistsHandler(IConfiguration config, ILogger<EnsureCertificateExistsHandler> logger)
+    : CertmanHandler<EnsureCertificateExistsCommand, Unit>(config, logger)
 {
-    public EnsureCertificateExistsHandler(IConfiguration config) : base(config)
-    {
-    }
-
     protected override Task<Unit> ExecuteAsync(EnsureCertificateExistsCommand request, CancellationToken ctoken)
     {
         var currentDirectory = Directory.GetCurrentDirectory();

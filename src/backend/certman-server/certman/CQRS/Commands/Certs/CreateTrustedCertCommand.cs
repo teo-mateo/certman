@@ -12,20 +12,12 @@ namespace certman.CQRS.Commands.Certs;
 
 public record CreateLeafCertCommand(int CaCertId, CreateLeafCertDto Dto) : IRequest<Cert>;
 
-public class CreateLeafCertCommandHandler : CertmanHandler<CreateLeafCertCommand, Cert>
+public class CreateLeafCertCommandHandler(IConfiguration config, IMediator mediator, IOpenSSL ssl, ILogger<CreateLeafCertCommandHandler> logger)
+    : CertmanHandler<CreateLeafCertCommand, Cert>(config, logger)
 {
-    private readonly IMediator _mediator;
-    private readonly IOpenSSL _ssl;
-
-    public CreateLeafCertCommandHandler(IConfiguration config, IMediator mediator, IOpenSSL ssl) : base(config)
-    {
-        _mediator = mediator;
-        _ssl = ssl;
-    }
-
     protected override async Task<Cert> ExecuteAsync(CreateLeafCertCommand request, CancellationToken ctoken)
     {
-        var caCert = await _mediator.Send(new GetCACertQuery(request.CaCertId), ctoken);
+        var caCert = await mediator.Send(new GetCACertQuery(request.CaCertId), ctoken);
         if (caCert == null)
         {
             throw new Exception("CA Cert not found");
@@ -33,13 +25,13 @@ public class CreateLeafCertCommandHandler : CertmanHandler<CreateLeafCertCommand
         
         await ThrowIfCertWithNameAlreadyExists(request.Dto.Name);
 
-        await _mediator.Send(new ClearWorkdirCommand(), ctoken);
+        await mediator.Send(new ClearWorkdirCommand(), ctoken);
         
         // copy the keyfile and pemfile of the CA Cert to the workdir
         var keyFileCA = CopyFromStoreToWorkdir(caCert.Keyfile);
         var pemFileCA = CopyFromStoreToWorkdir(caCert.Pemfile);
 
-        var (keyFile, csrFile) = await _ssl.CreateKeyAndCsr(
+        var (keyFile, csrFile) = await ssl.CreateKeyAndCsr(
             request.Dto.Name,
             new CsrInfo
             {
@@ -51,20 +43,20 @@ public class CreateLeafCertCommandHandler : CertmanHandler<CreateLeafCertCommand
                 CommonName = request.Dto.CommonName
             });
 
-        var extFile = await _ssl.CreateExtFile(
+        var extFile = await ssl.CreateExtFile(
             request.Dto.Name, 
             request.Dto.DnsNames, 
             request.Dto.IpAddresses ?? Array.Empty<string>());
         
         // create signed certificate using the private key, csr, and ext file
-        var crtFile = await _ssl.CreateSignedCert(
+        var crtFile = await ssl.CreateSignedCert(
             request.Dto.Name,
             keyFileCA,
             pemFileCA,
-            Path.Combine(_config["Workdir"], csrFile),
-            Path.Combine(_config["Workdir"], extFile));
+            Path.Combine(_config["Workdir"]!, csrFile),
+            Path.Combine(_config["Workdir"]!, extFile));
 
-        var pfxFile = await _ssl.BundleSelfSignedCert(request.Dto.Name, keyFile, crtFile, request.Dto.Password);
+        var pfxFile = await ssl.BundleSelfSignedCert(request.Dto.Name, keyFile, crtFile, request.Dto.Password);
 
         // object with request.dto.DnsNames and request.dto.IpAddresses
         var altNames = JsonSerializer.Serialize(
@@ -100,9 +92,9 @@ public class CreateLeafCertCommandHandler : CertmanHandler<CreateLeafCertCommand
         MoveFromWorkdirToStore(pfxFile);
         
         //cleanup workdir
-        await _mediator.Send(new ClearWorkdirCommand(), ctoken);
+        await mediator.Send(new ClearWorkdirCommand(), ctoken);
         
-        return (await _mediator.Send(new GetLeafCertQuery(request.CaCertId, id), ctoken))!;
+        return (await mediator.Send(new GetLeafCertQuery(request.CaCertId, id), ctoken))!;
     }
 
     private async Task ThrowIfCertWithNameAlreadyExists(string name)
@@ -118,15 +110,15 @@ public class CreateLeafCertCommandHandler : CertmanHandler<CreateLeafCertCommand
     
     private void MoveFromWorkdirToStore(string file)
     {
-        var source = Path.Combine(_config["Workdir"], file).ThrowIfFileNotExists();
-        var dest = Path.Combine(_config["Store"], file).ThrowIfFileExists();
+        var source = Path.Combine(_config["Workdir"]!, file).ThrowIfFileNotExists();
+        var dest = Path.Combine(_config["Store"]!, file).ThrowIfFileExists();
         File.Move(source, dest);
     }
 
     private string CopyFromStoreToWorkdir(string file)
     {
-        var source = Path.Combine(_config["Store"], file).ThrowIfFileNotExists();
-        var dest = Path.Combine(_config["Workdir"], file).ThrowIfFileExists();
+        var source = Path.Combine(_config["Store"]!, file).ThrowIfFileNotExists();
+        var dest = Path.Combine(_config["Workdir"]!, file).ThrowIfFileExists();
         File.Copy(source, dest);
         return dest;
     }

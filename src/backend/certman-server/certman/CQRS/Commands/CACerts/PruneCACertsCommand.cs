@@ -6,18 +6,12 @@ namespace certman.CQRS.Commands.CACerts;
 
 public record PruneCACertsCommand() : IRequest<Unit>;
 
-public class PruneCACertsCommandHandler : CertmanHandler<PruneCACertsCommand, Unit>
+public class PruneCACertsCommandHandler(IConfiguration config, IMediator mediator, ILogger<PruneCACertsCommandHandler> logger)
+    : CertmanHandler<PruneCACertsCommand, Unit>(config, logger)
 {
-    private readonly IMediator _mediator;
-
-    public PruneCACertsCommandHandler(IConfiguration config, IMediator mediator) : base(config)
-    {
-        _mediator = mediator;
-    }
-
     protected override async Task<Unit> ExecuteAsync(PruneCACertsCommand request, CancellationToken ctoken)
     {
-        var certs = await _mediator.Send(new GetAllCACertsQuery(), ctoken);
+        var certs = await mediator.Send(new GetAllCACertsQuery(), ctoken);
         foreach (var cert in certs)
         {
             await PruneCACert(cert);
@@ -31,12 +25,14 @@ public class PruneCACertsCommandHandler : CertmanHandler<PruneCACertsCommand, Un
     /// </summary>
     private async Task PruneCACert(CACert cert)
     {
-        var keyFile = Path.Combine(_config["Store"], cert.Keyfile);
-        var pemFile = Path.Combine(_config["Store"], cert.Pemfile);
+        var keyFile = Path.Combine(_config["Store"]!, cert.Keyfile);
+        var pemFile = Path.Combine(_config["Store"]!, cert.Pemfile);
         if (File.Exists(keyFile) && File.Exists(pemFile))
         {
             return;
         }
+        
+        logger.LogInformation("Pruning CA cert with id {Id} and name {Name}", cert.Id, cert.Name);
         
         File.Delete(keyFile);
         File.Delete(pemFile);

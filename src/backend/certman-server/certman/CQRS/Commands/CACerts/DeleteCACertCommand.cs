@@ -8,28 +8,25 @@ namespace certman.CQRS.Commands.CACerts;
 public record DeleteCACertCommand(int Id) : IRequest<Unit>;
 
 // handler
-public class DeleteCACertCommandHandler : CertmanHandler<DeleteCACertCommand, Unit>
+public class DeleteCACertCommandHandler(IConfiguration config, IMediator mediator, ILogger<DeleteCACertCommandHandler> logger)
+    : CertmanHandler<DeleteCACertCommand, Unit>(config, logger)
 {
-    private readonly IMediator _mediator;
-    public DeleteCACertCommandHandler(IConfiguration config, IMediator mediator) : base(config)
-    {
-        _mediator = mediator;
-    }
-
     protected override async Task<Unit> ExecuteAsync(DeleteCACertCommand request, CancellationToken ctoken)
     {
         // get the CA cert
-        var caCert = await _mediator.Send(new GetCACertQuery(request.Id), ctoken);
+        var caCert = await mediator.Send(new GetCACertQuery(request.Id), ctoken);
         if (caCert == null)
             return Unit.Value;
         
+        logger?.LogInformation("Deleting CA cert with id {Id} and name {Name}", caCert.Id, caCert.Name);
+        
         // delete all files of the CA cert (CACert class) from the store
-        File.Delete(Path.Combine(_config["Store"], caCert.Pemfile));
-        File.Delete(Path.Combine(_config["Store"], caCert.Keyfile));
+        File.Delete(Path.Combine(_config["Store"]!, caCert.Pemfile));
+        File.Delete(Path.Combine(_config["Store"]!, caCert.Keyfile));
 
         foreach (var cert in caCert.Certs)
         {
-            await _mediator.Send(new DeleteLeafCertCommand(caCert.Id, cert.Id), ctoken);
+            await mediator.Send(new DeleteLeafCertCommand(caCert.Id, cert.Id), ctoken);
         }
         
         await using var connection = await GetOpenConnectionAsync();

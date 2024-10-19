@@ -4,23 +4,12 @@ using certman.Extensions;
 
 namespace certman.Services;
 
-public class OpenSSL: IOpenSSL
+public class OpenSSL(IConfiguration configuration, ILogger<OpenSSL> logger) : IOpenSSL
 {
     //ILogger
-    private readonly ILogger<OpenSSL> _logger;
-    private readonly string _opensslExecutable;
-    private readonly string _workdir;
+    private readonly string _opensslExecutable = configuration["OpenSSLExecutable"] ?? throw new Exception("OpenSSLExecutable not found in config");
+    private readonly string _workdir = configuration["Workdir"] ?? throw new Exception("Workdir not found in config");
     
-    //ctor
-    // Thoughts: instead of passing an IConfiguration from where we pick the values, 
-    // look into how to use the Options pattern to inject the values
-    public OpenSSL(IConfiguration configuration, ILogger<OpenSSL> logger)
-    {
-        _opensslExecutable = configuration["OpenSSLExecutable"];
-        _workdir = configuration["Workdir"];
-        _logger = logger;
-    }
-
     /// <summary>
     /// This method creates a private key with the given name and returns key file name.
     /// </summary>
@@ -158,7 +147,7 @@ public class OpenSSL: IOpenSSL
 
     private async Task RunOpenSSLCommand(ProcessStartInfo startInfo)
     {
-        _logger.LogInformation("[OPENSSL] {Arguments}", startInfo.ArgumentList.Aggregate((a, b) => $"{a} {b}"));
+        logger.LogInformation("[OPENSSL] {Arguments}", startInfo.ArgumentList.Aggregate((a, b) => $"{a} {b}"));
         
         // run the openssl command
         var process = new Process()
@@ -169,10 +158,12 @@ public class OpenSSL: IOpenSSL
         process.Start();
         
         string output = await process.StandardOutput.ReadToEndAsync();
-        _logger.LogInformation("[OPENSSL] {Output}", output);
+        if (!string.IsNullOrWhiteSpace(output))
+            logger.LogInformation("[OPENSSL] {Output}", output);
         
         string error = await process.StandardError.ReadToEndAsync();
-        _logger.LogError("[OPENSSL] {Error}", error);
+        if (!string.IsNullOrWhiteSpace(error))
+            logger.LogError("[OPENSSL] {Error}", error);
         
         await process.WaitForExitAsync();
         process.ThrowIfBadExit(error);        

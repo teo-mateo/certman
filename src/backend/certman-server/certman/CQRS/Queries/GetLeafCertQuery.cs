@@ -6,10 +6,8 @@ namespace certman.CQRS.Queries;
 
 public record GetLeafCertQuery(int CaCertId, int LeafCertId) : IRequest<Cert?>;
 
-public class GetCertQueryHandler: CertmanHandler<GetLeafCertQuery, Cert?>
+public class GetCertQueryHandler(IConfiguration config, ILogger<GetCertQueryHandler> logger) : CertmanHandler<GetLeafCertQuery, Cert?>(config, logger)
 {
-    public GetCertQueryHandler(IConfiguration config) : base(config) { }
-    
     protected override async Task<Cert?> ExecuteAsync(GetLeafCertQuery request, CancellationToken ctoken)
     {
         await using var connection = await GetOpenConnectionAsync();

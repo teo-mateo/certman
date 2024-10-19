@@ -11,29 +11,25 @@ namespace certman.CQRS.Commands.CACerts;
 
 public record CreateCACertCommand(CreateCACertDto Dto): IRequest<CACert>;
 
-public class CreateCACertCommandHandler : CertmanHandler<CreateCACertCommand, CACert>
+public class CreateCACertCommandHandler(IConfiguration config, IOpenSSL ssl, IMediator mediator, ILogger<CreateCACertCommandHandler> logger)
+    : CertmanHandler<CreateCACertCommand, CACert>(config, logger)
 {
-    private readonly IOpenSSL _ssl;
-    private readonly IMediator _mediator;
-
-    public CreateCACertCommandHandler(IConfiguration config, IOpenSSL ssl, IMediator mediator) : base(config)
-    {
-        _ssl = ssl;
-        _mediator = mediator;
-    }
-
     protected override async Task<CACert> ExecuteAsync(CreateCACertCommand request, CancellationToken ctoken)
     {
+        logger.LogInformation("Creating CA cert with name {Name}", request.Dto.Name);
+        
         await using var connection = await GetOpenConnectionAsync();
         
         //return if cert already exists, checking the db by name
         await ThrowIfCertWithNameAlreadyExists(request, connection);
 
         // create the private key file with the OpenSSL class
-        var keyfile = await _ssl.CreatePrivateKey(request.Dto.Name);
+        var keyfile = await ssl.CreatePrivateKey(request.Dto.Name);
+        logger.LogInformation("Created private key file {Keyfile}", keyfile);
 
         // create the PEM file with the OpenSSL class
-        var pemfile = await _ssl.CreatePEMFile(keyfile);
+        var pemfile = await ssl.CreatePEMFile(keyfile);
+        logger.LogInformation("Created PEM file {Pemfile}", pemfile);
 
         // insert cert into db
         await using var insertCommand = connection.CreateCommand();
@@ -51,13 +47,13 @@ public class CreateCACertCommandHandler : CertmanHandler<CreateCACertCommand, CA
         MoveFromWorkdirToStore(keyfile);
         MoveFromWorkdirToStore(pemfile);
 
-        return (await _mediator.Send(new GetCACertQuery(Convert.ToInt32(id)), ctoken))!;
+        return (await mediator.Send(new GetCACertQuery(Convert.ToInt32(id)), ctoken))!;
     }
 
     private void MoveFromWorkdirToStore(string file)
     {
-        var source = Path.Combine(_config["Workdir"], file).ThrowIfFileNotExists();
-        var dest = Path.Combine(_config["Store"], file).ThrowIfFileExists();
+        var source = Path.Combine(_config["Workdir"]!, file).ThrowIfFileNotExists();
+        var dest = Path.Combine(_config["Store"]!, file).ThrowIfFileExists();
         File.Move(source, dest);
     }
 

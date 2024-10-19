@@ -1,25 +1,23 @@
-﻿using certman.Extensions;
+﻿using System.ComponentModel.DataAnnotations;
+using System.Diagnostics.CodeAnalysis;
+using certman.Extensions;
 using MediatR;
 using Microsoft.Data.Sqlite;
 
 namespace certman.CQRS;
 
-public abstract class CertmanHandler<TRequest, TResponse> : IRequestHandler<TRequest, TResponse>
+public abstract class CertmanHandler<TRequest, TResponse>(IConfiguration config, ILogger logger)
+    : IRequestHandler<TRequest, TResponse>
     where TRequest : IRequest<TResponse>
 {
-    protected readonly IConfiguration _config;
-    protected readonly ILogger? _logger;
-
-    protected CertmanHandler(IConfiguration config, ILogger? logger = null)
-    {
-        _config = config;
-        _logger = logger;
-    }
+    protected readonly IConfiguration _config = config;
 
     protected abstract Task<TResponse> ExecuteAsync(TRequest request, CancellationToken ctoken);
 
     public Task<TResponse> Handle(TRequest request, CancellationToken cancellationToken)
     {
+        logger.LogInformation("Executing {Request}", request.GetType().Name);
+        
         return this.ExecuteAsync(request, cancellationToken);
     }
     

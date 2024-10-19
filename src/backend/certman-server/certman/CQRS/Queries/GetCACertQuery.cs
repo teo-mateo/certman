@@ -10,11 +10,8 @@ namespace certman.CQRS.Queries;
 /// </summary>
 public record GetCACertQuery(int Id) : IRequest<CACert?>;
 
-public class GetCACertQueryHandler : CertmanHandler<GetCACertQuery, CACert?>
+public class GetCACertQueryHandler(IConfiguration config, ILogger<GetCACertQueryHandler> logger) : CertmanHandler<GetCACertQuery, CACert?>(config, logger)
 {
-
-    public GetCACertQueryHandler(IConfiguration config) : base(config) { }
-
     protected override async Task<CACert?> ExecuteAsync(GetCACertQuery request, CancellationToken ctoken)
     {
         await using var connection = await GetOpenConnectionAsync();

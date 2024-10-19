@@ -2,15 +2,13 @@
 
 namespace certman.CQRS.Commands.Storage;
 
-public record ClearWorkdirCommand(): IRequest<Unit>;
+public record ClearWorkdirCommand: IRequest<Unit>;
 
-public class ClearWorkdirCommandHandler : CertmanHandler<ClearWorkdirCommand, Unit>
+public class ClearWorkdirCommandHandler(IConfiguration config, ILogger<ClearWorkdirCommandHandler> logger) : CertmanHandler<ClearWorkdirCommand, Unit>(config, logger)
 {
-    public ClearWorkdirCommandHandler(IConfiguration config) : base(config) { }
-
     protected override Task<Unit> ExecuteAsync(ClearWorkdirCommand request, CancellationToken ctoken)
     {
-        foreach (var file in Directory.GetFiles(_config["Workdir"]))
+        foreach (var file in Directory.GetFiles(_config["Workdir"]!))
         {
             File.Delete(file);
         }

@@ -6,10 +6,9 @@ namespace certman.CQRS.Commands.Storage;
 
 public record RecreateDbTablesCommand : IRequest<Unit>;
 
-public class RecreateDbTablesCommandHandler : CertmanHandler<RecreateDbTablesCommand, Unit>
+public class RecreateDbTablesCommandHandler(IConfiguration config, ILogger<RecreateDbTablesCommandHandler> logger)
+    : CertmanHandler<RecreateDbTablesCommand, Unit>(config, logger)
 {
-    public RecreateDbTablesCommandHandler(IConfiguration config) : base(config) { }
-
     protected override async Task<Unit> ExecuteAsync(RecreateDbTablesCommand request, CancellationToken ctoken)
     {
 
