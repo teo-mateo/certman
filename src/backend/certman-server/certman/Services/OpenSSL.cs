@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics;
 using System.Text;
 using certman.Extensions;
+using Heapzilla.Common.Filesystem;
 
 namespace certman.Services;
 
@@ -147,7 +148,7 @@ public class OpenSSL(IConfiguration configuration, ILogger<OpenSSL> logger) : IO
 
     private async Task RunOpenSSLCommand(ProcessStartInfo startInfo)
     {
-        _logger.LogInformation("[OPENSSL] {Arguments}", startInfo.ArgumentList.Aggregate((a, b) => $"{a} {b}"));
+        logger.LogInformation("[OPENSSL] {Arguments}", startInfo.ArgumentList.Aggregate((a, b) => $"{a} {b}"));
         
         // run the openssl command
         var process = new Process()
@@ -158,10 +159,10 @@ public class OpenSSL(IConfiguration configuration, ILogger<OpenSSL> logger) : IO
         process.Start();
         
         string output = await process.StandardOutput.ReadToEndAsync();
-        _logger.LogInformation("[OPENSSL] {Output}", output);
+        logger.LogInformation("[OPENSSL] {Output}", output);
         
         string error = await process.StandardError.ReadToEndAsync();
-        _logger.LogError("[OPENSSL] {Error}", error);
+        logger.LogError("[OPENSSL] {Error}", error);
         
         await process.WaitForExitAsync();
         process.ThrowIfBadExit(error);        
