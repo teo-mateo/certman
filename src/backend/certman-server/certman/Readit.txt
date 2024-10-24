@@ -1,0 +1,41 @@
+﻿// add OpenTelemetry tracing
+builder.Services.AddOpenTelemetry()
+    .WithTracing(cfgTracing =>
+    {
+        cfgTracing
+            .AddSource(SERVICE_NAME)   //is this necessary?
+            .AddSource(DiagnosticHeaders.DefaultListenerName)
+            .SetResourceBuilder(resourceBuilder)
+            .AddOtlpExporter(opt =>
+            {
+                opt.Endpoint = new Uri(elasticEndpoint());
+                opt.Headers = $"Authorization=Basic {basicAuthHeader()}";
+            });
+    
+    })
+    .WithMetrics(cfgMetrics =>
+    {
+        cfgMetrics
+            .AddMeter(SERVICE_NAME)
+            .SetResourceBuilder(resourceBuilder)
+            .AddOtlpExporter(opt =>
+            {
+                opt.Endpoint = new Uri(elasticEndpoint());
+                opt.Headers = $"Authorization=Basic {basicAuthHeader()}";
+            });
+    });
+
+// add OpenTelemetry logging
+builder.Logging.AddOpenTelemetry(opt =>
+{
+    opt.IncludeScopes = true;
+    opt.ParseStateValues = true;
+    opt.IncludeFormattedMessage = true;
+    
+    opt.SetResourceBuilder(resourceBuilder)
+        .AddOtlpExporter(otlpOpt =>
+        {
+            otlpOpt.Endpoint = new Uri(elasticEndpoint());
+            otlpOpt.Headers = $"Authorization=Basic {basicAuthHeader}";
+        });
+});
